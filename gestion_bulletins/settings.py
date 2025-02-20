@@ -14,7 +14,11 @@ DEBUG = True
 
 
 # Hôtes autorisés
-ALLOWED_HOSTS = ["gestion-bulletins.up.railway.app", "127.0.0.1"]
+
+
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
+
+
 
 
 
