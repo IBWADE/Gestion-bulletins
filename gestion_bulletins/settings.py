@@ -10,11 +10,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
 
 # Mode Debug (désactivé en production)
-DEBUG = False
+DEBUG = True
 
 
 # Hôtes autorisés
 ALLOWED_HOSTS = ["gestion-bulletins.up.railway.app", "127.0.0.1"]
+
 
 
 # Applications Django
@@ -67,7 +68,7 @@ WSGI_APPLICATION = 'gestion_bulletins.wsgi.application'
 
 # Base de données
 DATABASES = {
-    'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
+    'default': dj_database_url.config(default='sqlite:///db.sqlite3', conn_max_age=600)
 }
 
 # Validation des mots de passe
@@ -127,4 +128,11 @@ CACHES = {
 
 
 django_on_heroku.settings(locals())
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://gestion-bulletins.up.railway.app",
+]
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
