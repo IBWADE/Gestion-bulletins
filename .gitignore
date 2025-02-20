@@ -1,0 +1,13 @@
+# Ignorer les fichiers compilés Python
+__pycache__/
+*.pyc
+
+# Ignorer la base de données SQLite
+db.sqlite3
+
+# Ignorer les fichiers statiques collectés
+
+/staticfiles/
+echo "__pycache__/" >> .gitignore
+echo "db.sqlite3" >> .gitignore
+echo "staticfiles/" >> .gitignore
