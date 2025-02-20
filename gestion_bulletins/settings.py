@@ -77,9 +77,11 @@ DATABASES = {
     'default': dj_database_url.config(default='sqlite:///db.sqlite3', conn_max_age=600)
 }
 
-# Si Railway est disponible, utiliser PostgreSQL
-if 'RAILWAY_DATABASE_URL' in os.environ:
+if os.getenv('RAILWAY_DATABASE_URL'):
+    print("🎯 Railway détecté, passage à PostgreSQL")
     DATABASES['default'] = dj_database_url.config(env='RAILWAY_DATABASE_URL', conn_max_age=600)
+
+print("📌 Base de données utilisée :", DATABASES['default'])   
 
 # Validation des mots de passe
 AUTH_PASSWORD_VALIDATORS = [
