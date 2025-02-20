@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import dj_database_url
-import django_on_heroku
+
 
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'bulletins',
     'widget_tweaks',
     'django_extensions',
+    "django.contrib.postgres",
 ]
 
 # Middleware
@@ -67,9 +68,19 @@ TEMPLATES = [
 WSGI_APPLICATION = 'gestion_bulletins.wsgi.application'
 
 # Base de données
-DATABASES = {
-    "default": dj_database_url.config(default=os.getenv("DATABASE_URL"), conn_max_age=600, ssl_require=True)
+import os
+import dj_database_url
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL:
+    DATABASES = {
+    "default": dj_database_url.config(default=os.getenv("DATABASE_URL"))
 }
+else:
+    print("⚠️ DATABASE_URL non défini ! Vérifie tes variables d'environnement.")
+
+
 
 # Validation des mots de passe
 AUTH_PASSWORD_VALIDATORS = [
@@ -127,7 +138,7 @@ CACHES = {
 }
 
 
-django_on_heroku.settings(locals())
+
 
 CSRF_TRUSTED_ORIGINS = [
     "https://gestion-bulletins.up.railway.app",
