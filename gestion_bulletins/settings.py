@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import dj_database_url
-
+import django_on_heroku
 
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -9,16 +9,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Clé secrète (à configurer via les variables d'environnement)
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
 
-# Mode Debug (désactivé en production)
-DEBUG = True
+
 
 
 # Hôtes autorisés
-
-
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
-
-
+ALLOWED_HOSTS = ["gestion-bulletins.up.railway.app", "127.0.0.1"]
 
 
 
@@ -33,7 +28,6 @@ INSTALLED_APPS = [
     'bulletins',
     'widget_tweaks',
     'django_extensions',
-    "django.contrib.postgres",
 ]
 
 # Middleware
@@ -72,19 +66,21 @@ TEMPLATES = [
 WSGI_APPLICATION = 'gestion_bulletins.wsgi.application'
 
 # Base de données
-import os
-import dj_database_url
+# Détection de l'environnement (True si en local, False si en production)
+DEBUG = os.getenv("DEBUG", "True") == "True"
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-if DATABASE_URL:
+# Configuration de la base de données
+if DEBUG:  # Mode local
     DATABASES = {
-    "default": dj_database_url.config(default=os.getenv("DATABASE_URL"))
-}
-else:
-    print("⚠️ DATABASE_URL non défini ! Vérifie tes variables d'environnement.")
-
-
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
+        }
+    }
+else:  # Mode production
+    DATABASES = {
+        "default": dj_database_url.config(default=os.getenv("DATABASE_URL"), conn_max_age=600)
+    }
 
 # Validation des mots de passe
 AUTH_PASSWORD_VALIDATORS = [
@@ -142,7 +138,7 @@ CACHES = {
 }
 
 
-
+django_on_heroku.settings(locals())
 
 CSRF_TRUSTED_ORIGINS = [
     "https://gestion-bulletins.up.railway.app",
