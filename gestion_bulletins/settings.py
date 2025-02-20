@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'bulletins',
     'widget_tweaks',
     'django_extensions',
+    'django.contrib.postgres',
 ]
 
 # Middleware
@@ -72,17 +73,13 @@ DEBUG = os.getenv("DEBUG", "True") == "True"
 # Détection de l'environnement
 IS_PRODUCTION = os.getenv('RAILWAY_DATABASE_URL') is not None
 
-if IS_PRODUCTION:
-    DATABASES = {
-        'default': dj_database_url.config(default=os.getenv('RAILWAY_DATABASE_URL'))
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        }
-    }
+DATABASES = {
+    'default': dj_database_url.config(default='sqlite:///db.sqlite3', conn_max_age=600)
+}
+
+# Si Railway est disponible, utiliser PostgreSQL
+if 'RAILWAY_DATABASE_URL' in os.environ:
+    DATABASES['default'] = dj_database_url.config(env='RAILWAY_DATABASE_URL', conn_max_age=600)
 
 # Validation des mots de passe
 AUTH_PASSWORD_VALIDATORS = [
