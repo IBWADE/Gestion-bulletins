@@ -68,7 +68,7 @@ WSGI_APPLICATION = 'gestion_bulletins.wsgi.application'
 
 # Base de données
 DATABASES = {
-    'default': dj_database_url.config(default='sqlite:///db.sqlite3', conn_max_age=600)
+    "default": dj_database_url.config(default=os.getenv("DATABASE_URL"), conn_max_age=600, ssl_require=True)
 }
 
 # Validation des mots de passe
