@@ -3,7 +3,7 @@ from . import views
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from django.contrib.auth import views as auth_views
-from .views import CustomPasswordResetView
+
 
 
 
@@ -134,15 +134,7 @@ urlpatterns = [
 
     # Ajouter une matiere optionnelle
     path('eleve/<int:eleve_id>/choix-matieres/', views.choisir_matieres_optionnelles, name='choisir_matieres_optionnelles'),
-
-    # Reintialiser Mot de passe
-    path("password_reset_request/", views.demander_reinitialisation_mdp, name="password_reset_request"),
-    path("password_reset/<str:token>/", views.reinitialiser_mdp, name="password_reset"),
-    #path('password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
-    path('password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
-    path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
-    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
-    path('reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
+  
 ]
 
 

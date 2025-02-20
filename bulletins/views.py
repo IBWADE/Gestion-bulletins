@@ -22,9 +22,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.models import Avg
 import logging
-from django.utils.crypto import get_random_string
-from django.contrib.auth.views import PasswordResetView
-from django.conf import settings
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -3371,57 +3370,5 @@ def bulletin_eleve_m2(request, eleve_id, semestre):
     return render(request, 'bulletins/bulletin_eleve_m2.html', context)
 
 
-# Dictionnaire pour stocker les tokens temporairement (remplace une vraie DB)
-password_reset_tokens = {}
-
-def demander_reinitialisation_mdp(request):
-    """ Vue permettant de demander la réinitialisation du mot de passe """
-
-    if request.method == "POST":
-        email = request.POST.get('email')
-        try:
-            user = CustomUser.objects.get(email=email)
-            token = get_random_string(20)  # Génération d'un token aléatoire
-            password_reset_tokens[token] = user.username  # Associer le token à l'utilisateur
-            
-            messages.success(request, f"Un lien de réinitialisation a été généré : {request.build_absolute_uri('/password_reset/' + token)}")
-        except CustomUser.DoesNotExist:
-            messages.error(request, "Cet email n'est associé à aucun compte.")
-
-    return render(request, "registration/password_reset_request.html")
-
-
-def reinitialiser_mdp(request, token):
-    """ Vue permettant de modifier le mot de passe via le token """
-    username = password_reset_tokens.get(token)
-
-    if not username:
-        messages.error(request, "Lien invalide ou expiré.")
-        return redirect("password_reset_request")
-
-    user = CustomUser.objects.get(username=username)
-
-    if request.method == "POST":
-        new_password = request.POST.get("new_password")
-        confirm_password = request.POST.get("confirm_password")
-
-        if new_password == confirm_password:
-            user.set_password(new_password)
-            user.save()
-            del password_reset_tokens[token]  # Supprimer le token après utilisation
-            messages.success(request, "Mot de passe modifié avec succès. Connectez-vous avec votre nouveau mot de passe.")
-            return redirect("login")
-        else:
-            messages.error(request, "Les mots de passe ne correspondent pas.")
-
-    return render(request, "registration/password_reset_form.html", {"token": token})
-
-
-class CustomPasswordResetView(PasswordResetView):
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["domain"] = settings.DOMAIN  # Défini dans settings.py
-        context["protocol"] = "http"  # Met "https" en production
-        return context
 
 
