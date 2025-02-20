@@ -1,0 +1,38 @@
+<!-- Moyennes Par Établissement -->
+<div class="card shadow-lg mt-4">
+    <div class="card-header bg-success text-white text-center">
+        <h3>Moyennes Générales Par Établissement</h3>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Établissement</th>
+                    <th>Moyenne Générale</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for etab in classement_etablissements %}
+                <tr>
+                    <td>{{ etab.nom }}</td>
+                    <td>{{ etab.moyenne_generale|floatformat:2 }}/20</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2" class="text-center text-muted">Aucune donnée disponible.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Taux de Réussite -->
+<div class="card shadow-lg mt-4">
+    <div class="card-header bg-secondary text-white text-center">
+        <h3>Taux de Réussite Global</h3>
+    </div>
+    <div class="card-body text-center">
+        <p><strong>Taux de réussite :</strong> {{ taux_reussite|floatformat:2 }}%</p>
+    </div>
+</div>

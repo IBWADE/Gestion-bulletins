@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Profil de {{ utilisateur.username }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+            <h2><i class="fas fa-id-card me-2"></i>Profil de {{ utilisateur.username }}</h2>
+            <a href="{% url 'liste_utilisateurs' %}" class="btn btn-light ms-auto">
+                <i class="fas fa-arrow-left me-2"></i>Retour
+            </a>
+        </div>
+        <div class="card-body">
+            <p><strong>Nom :</strong> {{ utilisateur.last_name }}</p>
+            <p><strong>Prénom :</strong> {{ utilisateur.first_name }}</p>
+            <p><strong>Email :</strong> {{ utilisateur.email }}</p>
+            <p><strong>Rôle :</strong> {{ utilisateur.role|capfirst }}</p>
+            <a href="{% url 'modifier_user' utilisateur.id %}" class="btn btn-primary">
+                <i class="fas fa-edit me-2"></i>Modifier
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

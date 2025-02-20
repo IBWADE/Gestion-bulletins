@@ -1,0 +1,425 @@
+{% extends 'base.html' %}
+{% block title %}Statistiques Générales{% endblock %}
+{% block content %}
+
+        
+        
+   
+
+{% block extra_css %}
+<style>
+    /* Styles personnalisés */
+    .stat-card {
+        transition: transform 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+    .chart-container {
+        position: relative;
+        height: 400px;
+    }
+</style>
+{% endblock %}
+
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-12 text-center">
+            <h1 class="mb-4"><i class="fas fa-chart-line me-2"></i>Statistiques Générales</h1>
+        </div>
+    </div>
+
+    <!-- Section Statistiques Globales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card bg-primary text-white text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Nombre d'établissements</h5>
+                    <p class="card-text display-6">{{ total_etablissements }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-success text-white text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Nombre de classes</h5>
+                    <p class="card-text display-6">{{ total_classes }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-info text-white text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Nombre d'élèves</h5>
+                    <p class="card-text display-6">{{ total_eleves }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-warning text-dark text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Nombre d'enseignants</h5>
+                    <p class="card-text display-6">{{ total_enseignants }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- CSS pour effets stylés -->
+<style>
+    /* Animation de survol */
+    .stat-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-radius: 15px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .stat-card:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Icônes animées */
+    .animate-icon {
+        animation: float 2s infinite alternate;
+    }
+
+    @keyframes float {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(-5px); }
+    }
+
+    /* Effet néon sur les cartes */
+    .bg-success, .bg-info, .bg-warning, .bg-danger {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .bg-success::before, .bg-info::before, .bg-warning::before, .bg-danger::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent 70%);
+        transition: all 0.5s;
+        opacity: 0;
+    }
+
+    .stat-card:hover::before {
+        opacity: 1;
+        transform: rotate(30deg);
+    }
+</style>
+
+
+
+
+ <!-- Graphique des Moyennes Générales Par Classe -->           
+ <div class="card shadow-lg mt-4 p-3" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-radius: 15px;">
+    <div class="card-body text-center">
+        <h3 class="text-primary fw-bold">
+            <i class="fas fa-chart-bar me-2"></i> 📈 Graphique des Moyennes Générales Par Classe
+        </h3>
+        {% if moyennes_classes %}
+        <canvas id="moyennesClassesChart" class="mt-4" style="max-height: 350px;"></canvas>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    var ctx = document.getElementById('moyennesClassesChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [{% for classe in moyennes_classes %}"{{ classe.nom|default:'Non défini' }}",{% endfor %}],
+            datasets: [{
+                label: 'Moyennes Générales',
+                data: [{% for classe in moyennes_classes %}{{ classe.moyenne_generale|floatformat:"2" }},{% endfor %}],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(153, 102, 255, 0.6)',
+                    'rgba(255, 159, 64, 0.6)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(tooltipItem) {
+                            return ' Moyenne: ' + tooltipItem.raw.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 20,
+                    ticks: {
+                        font: {
+                            size: 14
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            size: 14
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+
+   <!-- Graphique des Premiers de Chaque Classe -->         
+ <div class="card shadow-lg mt-4 p-3" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border-radius: 15px;">
+    <div class="card-body text-center">
+        <h3 class="text-success fw-bold">
+            <i class="fas fa-medal me-2"></i> 🏆 Graphique des Premiers de Chaque Classe
+        </h3>
+        {% if premiers_par_classe %}
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <canvas id="premiersClasseChart" style="max-height: 300px;"></canvas>
+            </div>
+            <div class="col-md-6">
+                <ul class="list-group list-group-flush">
+                    {% for premier in premiers_par_classe %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">{{ premier.nom }} ({{ premier.classe }})</span>
+                        <span class="badge bg-success fs-5">{{ premier.moyenne_annuelle|floatformat:"2" }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    var ctx = document.getElementById('premiersClasseChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: [{% for premier in premiers_par_classe %}"{{ premier.classe }}",{% endfor %}],
+            datasets: [{
+                data: [{% for premier in premiers_par_classe %}{{ premier.moyenne_annuelle|floatformat:"2" }},{% endfor %}],
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4CAF50', '#8E44AD', '#E67E22'],
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        font: {
+                            size: 14
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+
+<!-- Graphique des Trois Meilleurs Élèves -->
+<div class="card shadow-lg mt-4 p-3" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-radius: 15px;">
+    <div class="card-body text-center">
+        <h3 class="text-primary fw-bold">
+            <i class="fas fa-award me-2"></i> 🏆 Graphique des Trois Meilleurs Élèves
+        </h3>
+        {% if meilleurs_eleves_etablissement %}
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <canvas id="meilleursElevesChart" style="max-height: 300px;"></canvas>
+            </div>
+            <div class="col-md-6">
+                <ul class="list-group list-group-flush">
+                    {% for eleve in meilleurs_eleves_etablissement %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">{{ eleve.prenom }} {{ eleve.nom }}</span>
+                        <span class="badge bg-success fs-5">{{ eleve.moyenne_annuelle|floatformat:"2" }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    var ctx = document.getElementById('meilleursElevesChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: [{% for eleve in meilleurs_eleves_etablissement %}"{{ eleve.prenom }} {{ eleve.nom }}",{% endfor %}],
+            datasets: [{
+                label: 'Moyennes Annuelles',
+                data: [{% for eleve in meilleurs_eleves_etablissement %}{{ eleve.moyenne_annuelle|floatformat:"2" }},{% endfor %}],
+                backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                borderColor: 'rgba(255, 193, 7, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            elements: {
+                line: {
+                    borderWidth: 3
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+</script>
+
+
+<!-- Graphique des Trois derniers Élèves -->
+<div class="card shadow-lg mt-4 p-3" style="background: linear-gradient(135deg, #ffebee, #ffcdd2); border-radius: 15px;">
+    <div class="card-body text-center">
+        <h3 class="text-danger fw-bold">
+            <i class="fas fa-exclamation-triangle me-2"></i> 📉 Graphique des Trois Derniers Élèves
+        </h3>
+        {% if mauvais_eleves_etablissement %}
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <canvas id="mauvaisElevesChart" style="max-height: 300px;"></canvas>
+            </div>
+            <div class="col-md-6">
+                <ul class="list-group list-group-flush">
+                    {% for eleve in mauvais_eleves_etablissement %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">{{ eleve.prenom }} {{ eleve.nom }}</span>
+                        <span class="badge bg-danger fs-5">{{ eleve.moyenne_annuelle|floatformat:"2" }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    var ctx = document.getElementById('mauvaisElevesChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: [{% for eleve in mauvais_eleves_etablissement %}"{{ eleve.prenom }} {{ eleve.nom }}",{% endfor %}],
+            datasets: [{
+                label: 'Moyennes Annuelles',
+                data: [{% for eleve in mauvais_eleves_etablissement %}{{ eleve.moyenne_annuelle|floatformat:"2" }},{% endfor %}],
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',  /* Couleur rouge clair */
+                borderColor: 'rgba(255, 99, 132, 1)', /* Rouge foncé */
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            elements: {
+                line: {
+                    borderWidth: 3
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+</script>
+
+    
+             <!-- Taux de Réussite Global -->
+           <div class="card shadow-lg mt-4 p-3" style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 15px;">
+    <div class="card-body text-center">
+        <h3 class="text-success fw-bold">
+            <i class="fas fa-trophy me-2"></i> Taux de Réussite Global
+        </h3>
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <canvas id="tauxReussiteChart" style="max-height: 300px;"></canvas>
+            </div>
+            <div class="col-md-6">
+                <h1 class="display-4 text-success fw-bold">{{ taux_reussite }}%</h1>
+                <p class="text-muted">des élèves ont réussi cette année.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var ctx = document.getElementById('tauxReussiteChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Réussite', 'Échec'],
+            datasets: [{
+                data: [{{ taux_reussite }}, {{ taux_echec }}],
+                backgroundColor: ['rgba(75, 192, 192, 0.8)', 'rgba(255, 99, 132, 0.8)'],
+                borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                borderWidth: 2,
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        font: {
+                            size: 14
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+
+
+        </div>
+    
+{% endblock %}

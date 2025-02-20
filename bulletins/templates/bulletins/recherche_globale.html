@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4 no-print">Recherche Globale</h2>
+    <div class="no-print">
+        <form method="post" class="mb-4">
+            {% csrf_token %}
+            <div class="row g-3">
+                {% for field in form %}
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {{ field|add_class:"form-select" }}
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {% if field.errors %}
+                                <div class="invalid-feedback d-block">{{ field.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+               <!-- <div class="col-md-6">
+                    <div class="form-floating">
+                        <select name="semestre" class="form-select">
+                            <option value="1">Semestre 1</option>
+                            <option value="2">Semestre 2</option>
+                        </select>
+                        <label for="semestre">Semestre</label>
+                    </div>
+                </div>-->
+            </div>
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-search me-2"></i> Lancer la recherche
+            </button>
+        </form>
+    </div>
+    {% if type_recherche == 'eleves_classe' and resultats.eleves %}
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h3>Classe : {{ resultats.classe.nom }} - Semestre : {{ resultats.semestre }}</h3>
+        </div>
+        <div class="card-body">
+            {% if resultats.eleves %}
+                <div class="row row-cols-1 row-cols-md-3 g-4">
+                    {% for eleve in resultats.eleves %}
+                        <div class="col">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">{{ eleve.prenom }} {{ eleve.nom }}</h5>
+                                    <p class="mb-1"><strong>Moyenne :</strong> {{ eleve.moyenne_generale|floatformat:2 }}/20</p>
+                                    <p class="mb-0"><strong>Rang :</strong> {{ eleve.rang }}<sup>{% if eleve.rang == 1 %}er{% else %}ème{% endif %}</sup></p>
+                                </div>
+                                <div class="card-footer text-center">
+                                        <a href="{% if resultats.semestre|add:0 == 1 %}{% url 'bulletin_semestre_1' eleve.id %}{% else %}{% url 'bulletin_semestre_2' eleve.id %}{% endif %}" 
+                                            class="btn btn-sm btn-success" target="_blank">
+                                            <i class="fas fa-print"></i> Bulletin
+                                        </a>
+
+                                   
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-center text-muted">Aucun élève trouvé dans cette classe.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+
+
+  {% if type_recherche == 'bulletin_eleve' and resultats.eleve %}
+<div class="card shadow-sm border-0 rounded-2 p-2 mx-auto text-center" 
+     style="max-width: 300px; font-size: 0.9rem;">
+    <div class="card-header bg-primary text-white py-1">
+        📄 Bulletin
+    </div>
+    <div class="card-body p-2">
+        <ul class="list-unstyled mb-1">
+            <li><strong>👤</strong> {{ resultats.eleve.nom }} {{ resultats.eleve.prenom }}</li>
+            <li><strong>📚</strong> {{ resultats.classe.nom }}</li>
+            <li><strong>📆</strong> Semestre {{ resultats.semestre }}</li>
+        </ul>
+        <a href="{% if resultats.semestre|add:0 == 1 %}{% url 'bulletin_semestre_1' resultats.eleve.id %}{% else %}{% url 'bulletin_semestre_2' resultats.eleve.id %}{% endif %}" 
+           class="btn btn-success btn-sm px-3" target="_blank">
+            <i class="fas fa-print"></i>
+        </a>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-warning text-center p-1 mt-1 mx-auto" style="max-width: 250px; font-size: 0.8rem;">
+    ⚠️ Aucune donnée.
+</div>
+{% endif %}
+
+
+
+   {% if type_recherche == 'meilleur_eleve' and resultats.meilleur_eleve %}
+    <div class="card shadow mb-4 text-center">
+        <div class="card-header bg-success text-white">
+            <h5 class="fw-bold">🏆 Meilleur élève - {{ resultats.classe.nom }} (Semestre {{ resultats.semestre }})</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>👤 Nom :</strong> {{ resultats.meilleur_eleve.prenom }} {{ resultats.meilleur_eleve.nom }}</p>
+            <p><strong>⭐ Moyenne :</strong> {{ resultats.meilleur_eleve.moyenne|floatformat:2 }}/20</p>
+        </div>
+    </div>
+{% endif %}
+
+
+   {% if resultats.bulletins_classe %}
+    <h2>Bulletins de la classe {{ resultats.bulletins_classe.nom }} - Semestre : {{ resultats.semestre }}</h2>
+    <a href="{% if resultats.semestre|add:0 == 1 %}
+                 {% url 'impression_bulletins_classe1' resultats.bulletins_classe.id resultats.semestre %}
+             {% else %}
+                 {% url 'impression_bulletins_classe2' resultats.bulletins_classe.id resultats.semestre %}
+             {% endif %}"  
+       class="btn btn-primary" target="_blank">
+        Imprimer les bulletins
+    </a>
+{% endif %}
+
+    {% if type_recherche == 'classes_enseignant' and resultats.classes %}
+        <div class="card shadow mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h3>Classes enseignées par {{ resultats.enseignant.prenom }} {{ resultats.enseignant.nom }}</h3>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for classe in resultats.classes %}
+                        <li class="list-group-item">{{ classe.nom }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if type_recherche == 'enseignants_etablissement' and resultats.enseignants %}
+        <div class="card shadow mb-4">
+            <div class="card-header bg-danger text-white">
+                <h3>Enseignants de l'établissement {{ resultats.etablissement.nom }}</h3>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for enseignant in resultats.enseignants %}
+                        <li class="list-group-item">{{ enseignant.prenom }} {{ enseignant.nom }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+
+   {% if type_recherche == 'liste_classes_etablissement' and resultats.classes_etablissement %}
+    <div class="card shadow mb-4">
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+            <h3>Classes de l'établissement {{ resultats.etablissement.nom }}</h3>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for classe in resultats.classes_etablissement %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ classe.nom }}
+                        <a href="{% url 'liste_eleves_classe_vis' classe.id %}" target="_blank" class="btn btn-sm btn-primary">
+                            <i class="fas fa-print"></i> Imprimer liste eleves
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+         </div>
+       </div>
+   {% endif %}
+
+
+    {% if not resultats %}
+        <p class="text-center text-muted">Aucun résultat trouvé.</p>
+    {% endif %}
+</div>
+{% endblock %}

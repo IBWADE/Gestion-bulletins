@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mt-3 no-print">
+        <a href="javascript:history.back()" class="btn btn-secondary no-print mt-3">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+        <button class="btn btn-primary" onclick="window.print();">
+            <i class="fas fa-print"></i>
+        </button>
+    </div>
+    
+   <div class="card shadow-lg">
+    <!-- En-tête avec fond bleu -->
+    <div class="card-header bg-primary text-white border-bottom shadow-sm">
+        <div class="container">
+            <div class="row align-items-center">
+                <!-- Logo de l'établissement à gauche -->
+                <div class="col-md-2 text-start">
+                    {% if eleve.classe.etablissement.logo %}
+                        <img src="{{ eleve.classe.etablissement.logo.url }}" 
+                             alt="{{ eleve.classe.etablissement.nom }}" 
+                             class="school-logo rounded-circle shadow-sm"
+                             style="max-width: 90px; height: auto;">
+                    {% else %}
+                        <img src="{% static 'images/logo-par-defaut.png' %}" 
+                             alt="Logo par défaut" 
+                             class="school-logo rounded-circle shadow-sm"
+                             style="max-width: 90px; height: auto;">
+                    {% endif %}
+                     <!-- IA et IEF en deux lignes distinctes -->
+                    <div class="mt-1 text-center fw-bold small">
+                        🏫 IA : {{ eleve.classe.etablissement.ia }} <br>
+                        🏢 IEF : {{ eleve.classe.etablissement.ief }}
+                    </div>
+                </div>
+
+                <!-- Texte officiel et établissement au centre -->
+                <div class="col-md-8 text-center">
+                    <h4 class="fw-bold text-uppercase" style="font-family: 'Georgia', serif;">RÉPUBLIQUE DU SÉNÉGAL</h4>
+                    <h5 class="fw-bold text-uppercase" style="font-family: 'Georgia', serif;">MINISTÈRE DE L'ÉDUCATION NATIONALE</h5>
+
+                    <!-- Année scolaire -->
+                    <h6 class="fw-bold mt-2" style="font-family: 'Poppins', sans-serif;">
+                        📅 Année scolaire : {{ annee_scolaire }}
+                    </h6>
+
+                    <!-- Nom de l'établissement -->
+                    <h5 class="fw-bold mt-2 text-warning" style="font-family: 'Arial', sans-serif;">
+                        {{ eleve.classe.etablissement.nom }}
+                    </h5>
+                </div>
+
+                <div class="col-md-2"></div> <!-- Pour équilibrer les espaces -->
+            </div>
+        </div>
+
+        <!-- Titre Bulletin -->
+        <div class="text-center mt-3">
+            <h5 class="fw-bold" style="font-family: 'Arial Black', sans-serif;">
+                <i class="fas fa-file-alt me-2"></i>Bulletin du 2<sup>ème</sup> semestre
+            </h5>
+        </div>
+
+        <div class="row mt-4">
+            <!-- Informations de l'élève -->
+            <div class="col-md-6">
+                <h5 class="fw-bold" style="font-family: 'Poppins', sans-serif;">🎓 {{ eleve.prenom }} {{ eleve.nom }}</h5>
+                <h6 class="fw-bold text-muted small">📆 Né le : {{ eleve.date_naissance|date:"d/m/Y" }}</h6>
+                <h6 class="fw-bold text-muted small">📍 À : {{ eleve.lieu_naissance }}</h6>
+            </div>
+
+            <!-- Informations sur la classe -->
+            <div class="col-md-6 text-end">
+                <h5 class="fw-bold">📚 Classe : {{ eleve.classe.nom }}</h5>
+                <h5 class="fw-bold">👥 Effectif : {{ total_eleves }}</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <div class="card-body">
+    <!-- Tableau des notes Semestre 2 -->
+    {% if notes %}
+    <table class="table table-hover table-bordered table-sm align-middle text-center" style="border-radius: 10px; overflow: hidden;">
+        <thead class="table-primary text-white" style="background-color: #007bff;">
+            <tr>
+                <th style="width: 20%;">Disciplines</th>
+                <th>Devoirs</th>
+                <th>Composition</th>
+                <th>Moyenne / 20</th>
+                <th>Coefficient</th>
+                <th>Points</th>
+                <th>Rang</th>
+                <th>Appréciations</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for note in notes %}
+            <tr class="{% cycle 'table-light' 'table-secondary' %}">
+                <td class="fw-bold text-start ps-3">{{ note.matiere }}</td>
+                <td>{{ note.note_devoir|floatformat:2 }}</td>
+                <td>{{ note.note_composition|floatformat:2 }}</td>
+                <td class="fw-bold {% if note.moyenne_matiere >= 10 %}text-success{% else %}text-danger{% endif %}">
+                    {{ note.moyenne_matiere|floatformat:2 }}
+                </td>
+                <td>{{ note.coefficient }}</td>
+                <td>{{ note.points_matiere|floatformat:2 }}</td>
+                <td class="fw-bold">{{ note.rang_matiere }}<sup>{% if note.rang_matiere == 1 %}er{% else %}ème{% endif %}</sup></td>
+                <td class="text-start ps-3">{{ note.appreciation }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+   <!-- Statistiques générales -->
+<div class="container mt-4">
+    <div class="row border border-primary rounded p-3 bg-light">
+        <!-- Première partie : Total des points et moyennes -->
+        <div class="col-md-4 border-end">
+            <h5 class="text-center text-primary fw-bold">📊 Statistiques générales</h5>
+            <ul class="list-unstyled">
+                <li><strong>Total points Semestre 2 :</strong> {{ total_points|floatformat:2 }}</li>
+                <li><strong>Moy. générale Semestre 2 :</strong> {{ moyenne_generale_s2|floatformat:2 }}/20</li>
+                <li><strong>Rang Semestre 2 :</strong> {{ rang_semestre_2 }}<sup>{% if rang_semestre_2 == 1 %}er{% else %}ème{% endif %}</sup> / {{ total_eleves }} élèves</li>
+                <li><strong>🚫 Absences :</strong> <span class="text-danger">{{ total_absences }}</span></li>
+            </ul>
+        </div>
+
+        <!-- Deuxième partie : Synthèse annuelle -->
+        <div class="col-md-4 border-end">
+            <h5 class="text-center text-primary fw-bold">📅 Synthèse annuelle</h5>
+            <ul class="list-unstyled">
+                <li><strong>Moy. générale Semestre 1 :</strong> {{ moyenne_generale_s1|floatformat:2 }}/20</li>
+                <li><strong>Moy. générale Semestre 2 :</strong> {{ moyenne_generale_s2|floatformat:2 }}/20</li>
+                <li><strong>📈 Moyenne annuelle :</strong> <span class="fw-bold">{{ moyenne_annuelle|floatformat:2 }}/20</span></li>
+                <li><strong>🏅 Rang Annuel :</strong> {{ rang_annuel }}<sup>{% if rang_annuel == 1 %}er{% else %}ème{% endif %}</sup> / {{ total_eleves }} élèves</li>
+            </ul>
+        </div>
+
+        <!-- Troisième partie : Passage en classe supérieure -->
+        <div class="col-md-4 text-center">
+            <h5 class="text-primary fw-bold">🎓 Décision finale</h5>
+            {% if passe_classe %}
+            <p class="text-success fw-bold">✔️ L'élève passe en classe supérieure</p>
+            {% else %}
+            <p class="text-danger fw-bold">❌ L'élève ne passe pas</p>
+            {% endif %}
+
+            <!-- Ajout d'un espace avant la mention -->
+            <p class="mt-3 fw-bold 
+                {% if moyenne_annuelle >= 16 %}text-success{% 
+                elif moyenne_annuelle >= 14 %}text-primary{% 
+                elif moyenne_annuelle >= 13 %}text-info{% 
+                elif moyenne_annuelle >= 12 %}text-warning{% 
+                elif moyenne_annuelle >= 10 %}text-muted{% 
+                else %}text-danger{% endif %}">
+                
+                {% if moyenne_annuelle >= 16 %}
+                🏆 <span class="text-success">Mention : Très Bien</span>
+                {% elif moyenne_annuelle >= 14 %}
+                🎖️ <span class="text-primary">Mention : Bien</span>
+                {% elif moyenne_annuelle >= 13 %}
+                🌟 <span class="text-info">Mention : Assez Bien</span>
+                {% elif moyenne_annuelle >= 12 %}
+                🏅 <span class="text-warning">Tableau d'honneur</span>
+                {% elif moyenne_annuelle >= 10 %}
+                ✅ <span class="text-muted">Passable</span>
+                {% elif moyenne_annuelle >= 9 %}
+                ⚠️ <span class="text-danger">Insuffisant</span>
+                {% elif moyenne_annuelle >= 8 %}
+                ❌ <span class="text-danger">Moyen</span>
+                {% else %}
+                ⛔ <span class="text-danger">Faible</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="alert alert-warning mt-3 text-center">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    Aucune note disponible pour ce semestre.
+</div>
+{% endif %}
+
+
+             <!-- Section des signatures et appréciations -->
+<div class="mt-4 border-top pt-3">
+    <div class="row">
+        <!-- Appréciation des professeurs à gauche -->
+        <div class="col-md-6">
+            <h6 class="fw-bold text-muted small">✍️ Appréciation générale des professeurs :</h6>
+            <p class="text-muted fst-italic border-bottom border-secondary pb-2">............................................................</p>
+        </div>
+
+        <!-- Visa du chef d'établissement à droite -->
+        <div class="col-md-6 text-end">
+            <h6 class="fw-bold text-muted small">🖊️ Visa du chef de l'établissement :</h6>
+            <p class="text-muted fst-italic border-bottom border-secondary pb-2">............................................................</p>
+        </div>
+    </div>
+</div>
+
+        
+       <!-- Pied de page -->
+        <div class="card-footer text-center bg-light footer-fixed py-2 border-top">
+            <p class="mb-1 fw-bold text-primary">{{ eleve.classe.etablissement.nom }}</p>
+            <p class="mb-0 text-muted">📅 Année scolaire : <strong>{{ annee_scolaire }}</strong></p>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,465 @@
+from django import forms
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.shortcuts import get_object_or_404
+from .models import Eleve, Classe, Enseignant, Etablissement, Matiere, Note, CustomUser, Notification, Absence, AnneeScolaire, NiveauScolaire, ChoixMatiere
+from django.forms import SelectDateWidget
+from django.contrib.auth.forms import UserCreationForm
+
+
+class CustomUserCreationForm(forms.ModelForm):
+    password1 = forms.CharField(label="Mot de passe", widget=forms.PasswordInput)
+    password2 = forms.CharField(label="Confirmation du mot de passe", widget=forms.PasswordInput)
+
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'first_name', 'last_name', 'email', 'role']
+
+    def clean_password2(self):
+        password1 = self.cleaned_data.get('password1')
+        password2 = self.cleaned_data.get('password2')
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError("Les mots de passe ne correspondent pas.")
+        return password2
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data['password2'])
+        if commit:
+            user.save()
+        return user
+    
+
+class CustomUserForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'first_name', 'last_name', 'email', 'role']
+        widgets = {
+            'role': forms.Select(attrs={'class': 'form-select'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['role'].label = "Rôle"
+        self.fields['first_name'].label = "Prénom"
+        self.fields['last_name'].label = "Nom"
+
+
+class NotificationForm(forms.ModelForm):
+    class Meta:
+        model = Notification
+        fields = ['utilisateur', 'titre', 'message']
+        widgets = {
+            'utilisateur': forms.Select(attrs={'class': 'form-control'}),
+            'titre': forms.TextInput(attrs={'class': 'form-control'}),
+            'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+        }    
+
+
+class AbsenceForm(forms.ModelForm):
+    class Meta:
+        model = Absence
+        fields = ['eleve', 'matiere', 'date', 'motif', 'semestre']  # ✅ Ajout de 'semestre'
+        widgets = {
+            'eleve': forms.Select(attrs={'class': 'form-control'}),
+            'matiere': forms.Select(attrs={'class': 'form-control'}),
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'motif': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'semestre': forms.Select(attrs={'class': 'form-control'}),  # ✅ Ajout du widget pour 'semestre'
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)  # Récupérer l'utilisateur
+        super(AbsenceForm, self).__init__(*args, **kwargs)
+
+        # Filtrer les élèves pour un enseignant
+        if user and user.role == 'enseignant':
+            enseignant = get_object_or_404(Enseignant, user=user)
+            self.fields['eleve'].queryset = Eleve.objects.filter(classe__in=enseignant.classes.all())
+
+            # Filtrer les matières enseignées par cet enseignant
+            self.fields['matiere'].queryset = Matiere.objects.filter(enseignant=enseignant)
+        if 'instance' in kwargs and kwargs['instance']:
+            eleve = kwargs['instance'].eleve
+            classe = eleve.classe
+            etablissement = classe.etablissement
+
+            if "Sixième" in classe.nom or "Cinquième" in classe.nom:
+                matieres_filtrees = Matiere.objects.exclude(nom="Physique-Chimie").exclude(nom__startswith="Langue 2")
+            elif "Quatrième" in classe.nom:
+                if etablissement.choix_pc_langue:
+                    matieres_filtrees = Matiere.objects.all()
+                else:
+                    matieres_filtrees = Matiere.objects.exclude(nom__startswith="Langue 2")
+            else:  # Troisième
+                matieres_filtrees = Matiere.objects.all()
+
+            self.fields['matiere'].queryset = matieres_filtrees    
+
+
+
+class EleveForm(forms.ModelForm):
+    class Meta:
+        model = Eleve
+        fields = ['nom', 'prenom', 'classe', 'parent', 'date_naissance', 'lieu_naissance', 'matricule']
+        
+        widgets = {
+            'nom': forms.TextInput(attrs={'class': 'form-control'}),
+            'prenom': forms.TextInput(attrs={'class': 'form-control'}),
+            'classe': forms.Select(attrs={'class': 'form-control'}),
+            'parent': forms.Select(attrs={'class': 'form-control'}),
+            'date_naissance': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'lieu_naissance': forms.TextInput(attrs={'class': 'form-control'}),
+            'matricule': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)  # Récupérer l'utilisateur
+        super(EleveForm, self).__init__(*args, **kwargs)
+
+        # Restreindre les classes visibles pour un enseignant
+        if user and user.role == 'enseignant':
+            enseignant = get_object_or_404(Enseignant, user=user)
+            self.fields['classe'].queryset = enseignant.classes.all()
+        if self.instance and self.instance.classe:
+            classe = self.instance.classe
+            etablissement = classe.etablissement
+
+            # Déterminer les matières en fonction de la classe
+            if "Sixième" in classe.nom or "Cinquième" in classe.nom:
+                matieres_filtrees = Matiere.objects.exclude(nom="Physique-Chimie").exclude(nom__startswith="Langue 2")
+            elif "Quatrième" in classe.nom:
+                if etablissement.choix_pc_langue:
+                    matieres_filtrees = Matiere.objects.all()
+                else:
+                    matieres_filtrees = Matiere.objects.exclude(nom__startswith="Langue 2")
+            else:  # Troisième
+                matieres_filtrees = Matiere.objects.all()
+
+            # Assurer que l'élève ne choisit que les matières disponibles
+            self.fields['classe'].queryset = Classe.objects.filter(etablissement=etablissement)    
+
+
+
+class EtablissementForm(forms.ModelForm):
+    annee_scolaire = forms.ModelChoiceField(
+        queryset=AnneeScolaire.objects.all(),
+        empty_label="Sélectionnez une année scolaire",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+    class Meta:
+        model = Etablissement
+        fields = ['nom', 'adresse', 'ville', 'pays', 'telephone', 'logo', 'annee_scolaire', 'ia', 'ief', 'choix_matiere_quatrieme']
+        widgets = {
+            'nom': forms.TextInput(attrs={'class': 'form-control'}),
+            'adresse': forms.TextInput(attrs={'class': 'form-control'}),
+            'ville': forms.TextInput(attrs={'class': 'form-control'}),
+            'pays': forms.TextInput(attrs={'class': 'form-control'}),
+            'telephone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: +221 XX XXX XX XX'
+            }),
+            'logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'ia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: IA de Dakar'}),
+            'ief': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: IEF de Pikine'}),
+            'choix_matiere_quatrieme': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class ClasseForm(forms.ModelForm):
+    class Meta:
+        model = Classe
+        fields = ['nom', 'niveau', 'etablissement']  # Ajout du champ niveau
+        widgets = {
+            'nom': forms.TextInput(attrs={'class': 'form-control'}),
+            'niveau': forms.Select(attrs={'class': 'form-control'}),  # Ajout du widget
+            'etablissement': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)  # Récupérer l'utilisateur
+        super(ClasseForm, self).__init__(*args, **kwargs)
+
+        # Si un enseignant est rattaché à un établissement spécifique, filtrer
+        if user and user.role == 'enseignant':
+            enseignant = get_object_or_404(Enseignant, user=user)
+            self.fields['etablissement'].queryset = Etablissement.objects.filter(
+                id__in=enseignant.classes.values_list('etablissement_id', flat=True)
+            )
+
+
+
+
+class NiveauScolaireForm(forms.ModelForm):
+    class Meta:
+        model = NiveauScolaire
+        fields = ['nom', 'matieres_obligatoires', 'matieres_optionnelles']
+        widgets = {
+            'nom': forms.Select(attrs={'class': 'form-control'}),
+            'matieres_obligatoires': forms.CheckboxSelectMultiple(attrs={'class': 'form-check'}),
+            'matieres_optionnelles': forms.CheckboxSelectMultiple(attrs={'class': 'form-check'}),
+        }
+        labels = {
+            'nom': 'Nom du niveau scolaire',
+            'matieres_obligatoires': 'Matières obligatoires',
+            'matieres_optionnelles': 'Matières optionnelles',
+        }
+        help_texts = {
+            'matieres_obligatoires': "Sélectionnez les matières obligatoires pour ce niveau.",
+            'matieres_optionnelles': "Sélectionnez les matières optionnelles que les élèves peuvent choisir.",
+        }
+
+
+
+class ChoixMatiereForm(forms.Form):
+    matieres = forms.ModelMultipleChoiceField(
+        queryset=Matiere.objects.none(),
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+    )
+
+    def __init__(self, *args, **kwargs):
+        niveau = kwargs.pop("niveau", None)
+        etablissement = kwargs.pop("etablissement", None)
+        super().__init__(*args, **kwargs)
+
+        if niveau:
+            matieres_optionnelles = Matiere.objects.filter(niveaux_optionnels=niveau)
+            appliquer_regle_4e = niveau.nom == "4e" and etablissement and etablissement.choix_matiere_quatrieme
+
+            if appliquer_regle_4e or niveau.nom == "3e":
+                pc = Matiere.objects.filter(nom="Science Physique").first()
+                langues = Matiere.objects.filter(nom__in=["Espagnol", "Arabe", "Allemand"])
+
+                # Si PC est présent ET qu'une langue est aussi disponible, on garde les deux
+                if pc in matieres_optionnelles and matieres_optionnelles.intersection(langues).exists():
+                    # On ne filtre rien, on garde PC + une langue
+                    pass  # 🚀 On laisse tout tel quel !
+
+                print(f"Avant filtrage (4e/3e) : {Matiere.objects.filter(niveaux_optionnels=niveau)}")
+                print(f"Après filtrage final ({niveau.nom}) : {matieres_optionnelles}")
+
+            self.fields["matieres"].queryset = matieres_optionnelles
+
+
+
+
+
+
+class EnseignantForm(forms.ModelForm):
+    matieres = forms.ModelMultipleChoiceField(
+        queryset=Matiere.objects.all(),
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+        required=False,
+        label="Matières enseignées"
+    )
+
+    user = forms.ModelChoiceField(
+        queryset=CustomUser.objects.filter(role='enseignant'),  # Filtrer les utilisateurs enseignants
+        empty_label="Sélectionnez un utilisateur",
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Utilisateur"
+    )
+
+    class Meta:
+        model = Enseignant
+        fields = ['user', 'nom', 'prenom', 'classes', 'matieres']
+        widgets = {
+            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom de l’enseignant'}),
+            'prenom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Prénom de l’enseignant'}),
+            'classes': forms.SelectMultiple(attrs={'class': 'form-select'}),  # Si classes est un ManyToManyField
+        }
+        help_texts = {
+            'classes': "Sélectionnez les classes enseignées",
+        }
+
+
+
+
+class NoteForm(forms.ModelForm):
+    semestre = forms.ChoiceField(
+        choices=Note.SEMESTRES,
+        widget=forms.HiddenInput()  # Caché mais bien envoyé
+    )
+
+    class Meta:
+        model = Note
+        fields = ['matiere', 'note_devoir', 'note_composition', 'semestre']
+        widgets = {
+            'matiere': forms.Select(attrs={'class': 'form-select'}),
+            'note_devoir': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+            'note_composition': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        eleve = kwargs.pop('eleve', None)  # Récupérer l'élève pour filtrer ses matières
+        super().__init__(*args, **kwargs)
+
+        if eleve:
+            classe = eleve.classe
+            etablissement = classe.etablissement
+
+            # Appliquer les restrictions selon la classe
+            if "Sixième" in classe.nom or "Cinquième" in classe.nom:
+                matieres_filtrees = Matiere.objects.exclude(nom="Physique-Chimie").exclude(nom__startswith="Langue 2")
+            elif "Quatrième" in classe.nom:
+                if etablissement.choix_pc_langue:
+                    matieres_filtrees = Matiere.objects.all()
+                else:
+                    matieres_filtrees = Matiere.objects.exclude(nom__startswith="Langue 2")
+            else:  # Troisième
+                matieres_filtrees = Matiere.objects.all()
+
+            self.fields['matiere'].queryset = matieres_filtrees
+
+
+
+
+class MatiereForm(forms.ModelForm):
+    coefficient = forms.IntegerField(
+        validators=[MinValueValidator(1)],
+        widget=forms.NumberInput(attrs={'min': 1, 'class': 'form-control', 'placeholder': 'Coefficient'}),
+        label="Coefficient"
+    )
+    
+    class Meta:
+        model = Matiere
+        fields = '__all__'
+        widgets = {
+            'nom': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom de la matière'}),
+        }
+
+
+
+class NotesEleveForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        eleve = kwargs.pop('eleve', None)
+        super().__init__(*args, **kwargs)
+
+        if eleve:
+            for matiere in Matiere.objects.all():
+                self.fields[f'matiere_{matiere.id}'] = forms.ModelChoiceField(
+                    queryset=Note.objects.filter(eleve=eleve, matiere=matiere),
+                    required=False,
+                    widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
+                )    
+
+
+class EnseignantClassesForm(forms.ModelForm):
+    classes = forms.ModelMultipleChoiceField(
+        queryset=Classe.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+    )
+
+    class Meta:
+        model = Enseignant
+        fields = ['classes']
+        
+
+# Formulaire RechercheGlobaleForm
+class RechercheGlobaleForm(forms.Form):
+    TYPE_RECHERCHE_CHOICES = [
+        ('eleves_classe', 'Impression Bulletin par élève dans une classe'),
+        ('bulletin_eleve', 'Bulletin de notes d\'un élève'),
+        ('bulletins_classe', 'Impression globale bulletins de notes dans une classe'),
+        ('meilleur_eleve', 'Élève avec la meilleure moyenne dans une classe'),
+        ('classes_enseignant', 'Liste des classes d\'un enseignant'),
+        ('enseignants_etablissement', 'Enseignants d\'un établissement'),
+        ('liste_classes_etablissement', 'Liste des classes d\'un établissement'),
+    ]
+
+    type_recherche = forms.ChoiceField(
+        label="Type de recherche",
+        choices=TYPE_RECHERCHE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    classe = forms.ModelChoiceField(
+        queryset=Classe.objects.all(),
+        label="Classe",
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    eleve = forms.ModelChoiceField(
+        queryset=Eleve.objects.all(),
+        label="Élève",
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    enseignant = forms.ModelChoiceField(
+        queryset=Enseignant.objects.all(),
+        label="Enseignant",
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    etablissement = forms.ModelChoiceField(
+        queryset=Etablissement.objects.all(),
+        label="Établissement",
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    semestre = forms.ChoiceField(
+        label="Semestre",
+        choices=[('', 'Tous'), (1, 'Semestre 1'), (2, 'Semestre 2')],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        type_recherche = cleaned_data.get('type_recherche')
+        classe = cleaned_data.get('classe')
+        eleve = cleaned_data.get('eleve')
+        enseignant = cleaned_data.get('enseignant')
+        etablissement = cleaned_data.get('etablissement')
+
+        if type_recherche == 'bulletin_eleve' and not eleve:
+            self.add_error('eleve', "L'élève est requis pour ce type de recherche.")
+        if type_recherche in ['eleves_classe', 'bulletins_classe', 'meilleur_eleve'] and not classe:
+            self.add_error('classe', "La classe est requise pour ce type de recherche.")
+        if type_recherche == 'classes_enseignant' and not enseignant:
+            self.add_error('enseignant', "L'enseignant est requis pour ce type de recherche.")
+        if type_recherche in ['enseignants_etablissement', 'liste_classes_etablissement'] and not etablissement:
+            self.add_error('etablissement', "L'établissement est requis pour ce type de recherche.")
+        return cleaned_data
+
+
+
+class ArchiverAnneeForm(forms.Form):
+    annee_scolaire = forms.ModelChoiceField(
+        queryset=AnneeScolaire.objects.all().order_by('-debut', '-fin'),
+        empty_label="Sélectionnez une année scolaire",
+        widget=forms.Select(attrs={'class': 'form-control', 'required': True})
+    )
+
+
+
+class AnneeScolaireForm(forms.ModelForm):
+    class Meta:
+        model = AnneeScolaire
+        fields = ['nom', 'debut', 'fin']
+        widgets = {
+            'nom': forms.TextInput(attrs={'class': 'form-control'}),
+            'debut': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'fin': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        debut = cleaned_data.get('debut')
+        fin = cleaned_data.get('fin')
+
+        if debut and fin and debut >= fin:
+            raise forms.ValidationError("La date de début doit être antérieure à la date de fin.")
+
+        return cleaned_data
+
+
+
+
+
+

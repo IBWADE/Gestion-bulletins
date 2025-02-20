@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}Détail de l’Archive{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-dark text-white text-center py-4">
+            <h2 class="fw-bold"><i class="fas fa-archive me-2"></i> Détail de l’Archive</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Année Scolaire :</strong> {{ archive.annee_scolaire }}</p>
+                    <p><strong>Élève :</strong> {{ archive.eleve.prenom }} {{ archive.eleve.nom }}</p>
+                    <p><strong>Classe :</strong> {{ archive.classe|default:"Non définie" }}</p>
+                    <p><strong>Établissement :</strong> {{ archive.etablissement|default:"Non défini" }}</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p><strong>Moyenne Annuelle :</strong> 
+                        <span class="badge {% if archive.moyenne_annuelle >= 10 %} bg-success {% else %} bg-danger {% endif %}">
+                            {{ archive.moyenne_annuelle|floatformat:2 }}/20
+                        </span>
+                    </p>
+                    <p><strong>Rang Annuel :</strong> <span class="badge bg-primary"> {{ archive.rang_annuel }}ᵉ</span></p>
+                    <p><strong>Passe Classe :</strong> 
+                        <span class="badge {% if archive.passe_classe %} bg-success {% else %} bg-danger {% endif %}">
+                            {% if archive.passe_classe %} Oui {% else %} Non {% endif %}
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Notes Semestre 1 -->
+            {% if archive.notes %}
+                <h3 class="mt-4 text-primary">📘 Semestre 1</h3>
+                <table class="table table-hover table-bordered align-middle">
+                    <thead class="table-dark text-white">
+                        <tr>
+                            <th>Matière</th>
+                            <th>Coefficient</th>
+                            <th>Note Devoir</th>
+                            <th>Note Composition</th>
+                            <th>Moyenne</th>
+                            <th>Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for note in archive.notes.semestre_1 %}
+                        <tr>
+                            <td>{{ note.matiere__nom }}</td>
+                            <td>{{ note.matiere__coefficient }}</td>
+                            <td>{{ note.note_devoir|floatformat:2 }}/20</td>
+                            <td>{{ note.note_composition|floatformat:2 }}/20</td>
+                            <td class="{% if note.moyenne_matiere >= 10 %}text-success{% else %}text-danger{% endif %}">
+                                {{ note.moyenne_matiere|floatformat:2 }}/20
+                            </td>
+                            <td>{{ note.points_matiere|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-muted text-center">Aucune note enregistrée</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <p class="fw-bold text-end">Total Points : <span class="text-primary">{{ archive.total_points_semestre_1 }}</span></p>
+                <p class="fw-bold text-end">Rang Semestre 1 : <span class="badge bg-warning">{{ archive.rang_semestre_1 }}ᵉ</span></p>
+                <p class="fw-bold text-end">Mention Semestre 1 : <span class="badge {% if archive.mention_semestre_1 == 'Très Bien' %} bg-success {% elif archive.mention_semestre_1 == 'Bien' %} bg-info {% elif archive.mention_semestre_1 == 'Assez Bien' %} bg-warning {% else %} bg-danger {% endif %}">
+                    {{ archive.mention_semestre_1 }}
+                </span></p>
+
+                <h3 class="mt-4 text-primary">📗 Semestre 2</h3>
+                <table class="table table-hover table-bordered align-middle">
+                    <thead class="table-dark text-white">
+                        <tr>
+                            <th>Matière</th>
+                            <th>Coefficient</th>
+                            <th>Note Devoir</th>
+                            <th>Note Composition</th>
+                            <th>Moyenne</th>
+                            <th>Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for note in archive.notes.semestre_2 %}
+                        <tr>
+                            <td>{{ note.matiere__nom }}</td>
+                            <td>{{ note.matiere__coefficient }}</td>
+                            <td>{{ note.note_devoir|floatformat:2 }}/20</td>
+                            <td>{{ note.note_composition|floatformat:2 }}/20</td>
+                            <td class="{% if note.moyenne_matiere >= 10 %}text-success{% else %}text-danger{% endif %}">
+                                {{ note.moyenne_matiere|floatformat:2 }}/20
+                            </td>
+                            <td>{{ note.points_matiere|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-muted text-center">Aucune note enregistrée</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <p class="fw-bold text-end">Total Points : <span class="text-primary">{{ archive.total_points_semestre_2 }}</span></p>
+                <p class="fw-bold text-end">Rang Semestre 2 : <span class="badge bg-warning">{{ archive.rang_semestre_2 }}ᵉ</span></p>
+                <p class="fw-bold text-end">Mention Semestre 2 : <span class="badge {% if archive.mention_semestre_2 == 'Très Bien' %} bg-success {% elif archive.mention_semestre_2 == 'Bien' %} bg-info {% elif archive.mention_semestre_2 == 'Assez Bien' %} bg-warning {% else %} bg-danger {% endif %}">
+                    {{ archive.mention_semestre_2 }}
+                </span></p>
+            {% else %}
+                <p class="text-muted text-center">Aucune note archivée.</p>
+            {% endif %}
+
+            <!-- Absences -->
+            <h4 class="mt-4 text-danger">📅 Absences (Total : {{ archive.absences|length }})</h4>
+            {% if archive.absences %}
+                <ul class="list-group">
+                    {% for absence in archive.absences %}
+                    <li class="list-group-item">
+                        <strong>Date :</strong> {{ absence.date|default:"Non définie" }} - 
+                        <strong>Motif :</strong> {{ absence.motif|default:"Aucun motif" }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted text-center">Aucune absence n'a été archivée pour cet élève.</p>
+            {% endif %}
+
+            <div class="text-center mt-4">
+                <a href="{% url 'liste_archives' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Retour aux archives</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

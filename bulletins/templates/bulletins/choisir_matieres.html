@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Choix des matières optionnelles pour {{ eleve.prenom }} {{ eleve.nom }}</h2>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+   <form method="post">
+    {% csrf_token %}
+    
+    <p><strong>Matières optionnelles disponibles :</strong></p>
+    
+    {{ form.matieres.errors }}  <!-- Affiche les erreurs s'il y en a -->
+    <ul>
+    {% for matiere in form.fields.matieres.queryset %}
+        <li>
+            <label>
+                <input type="checkbox" name="matieres" value="{{ matiere.id }}"
+                    {% if matiere.id in form.initial.matieres %}checked{% endif %}>
+                {{ matiere.nom }}
+            </label>
+        </li>
+    {% empty %}
+        <li>Aucune matière optionnelle disponible.</li>
+    {% endfor %}
+</ul>
+
+
+    <button type="submit">Valider mes choix</button>
+</form>
+
+</div>
+{% endblock %}

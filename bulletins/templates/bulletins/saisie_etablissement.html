@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Saisie d'un établissement{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-success text-white">
+            <h2 class="mb-0">
+                <i class="fas fa-university me-2"></i>Nouvel établissement
+            </h2>
+        </div>
+
+        <div class="card-body">
+            <form method="post" novalidate enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Affichage des erreurs globales -->
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="row g-3">
+                    {% for field in form %}
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                {{ field }}
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            </div>
+                            {% if field.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ field.errors.0 }}
+                                </div>
+                            {% endif %}
+                            {% if field.help_text %}
+                                <small class="form-text text-muted">{{ field.help_text }}</small>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-4 d-flex justify-content-between">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-save me-2"></i>Enregistrer
+                    </button>
+                    <a href="{% url 'liste_etablissements' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+    }
+    .form-floating input,
+    .form-floating select {
+        height: calc(3.5rem + 2px);
+        line-height: 1.25;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Génération dynamique des années scolaires
+        let selectAnnee = document.getElementById('annee_scolaire');
+        let currentYear = new Date().getFullYear();
+        for (let i = 0; i < 10; i++) {
+            let anneeDebut = currentYear - i;
+            let anneeFin = anneeDebut + 1;
+            let option = new Option(`${anneeDebut}-${anneeFin}`, `${anneeDebut}-${anneeFin}`);
+            selectAnnee.add(option);
+        }
+
+        // Ajout des classes Bootstrap
+        const inputs = document.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            input.classList.add('form-control');
+            if(input.hasAttribute('required')) {
+                const label = input.previousElementSibling;
+                label.innerHTML += ' <span class="text-danger">*</span>';
+            }
+        });
+
+        // Configuration du select2 pour le pays
+        $('#{{ form.pays.id_for_label }}').select2({
+            placeholder: "Sélectionnez un pays",
+            allowClear: true,
+            theme: 'bootstrap-5'
+        });
+    });
+</script>
+{% endblock %}

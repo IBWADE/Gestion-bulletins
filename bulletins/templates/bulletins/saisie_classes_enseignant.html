@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Classes de {{ enseignant.prenom }} {{ enseignant.nom }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-success text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="fas fa-chalkboard-teacher me-2"></i>
+                    {{ enseignant.prenom }} {{ enseignant.nom }}
+                </h2>
+                <a href="{% url 'liste_enseignants' %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left me-2"></i>Retour
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <h5 class="text-success mb-3">
+                        <i class="fas fa-users-class me-2"></i>Attribution des classes
+                    </h5>
+                    
+                    {% if form.classes.errors %}
+                    <div class="alert alert-danger">
+                        {{ form.classes.errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        {% for checkbox in form.classes %}
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                {{ checkbox.tag }}
+                                <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                                    <i class="fas fa-users me-2"></i>{{ checkbox.choice_label }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-between">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-save me-2"></i>Enregistrer
+                    </button>
+                    <a href="{% url 'detail_classes_enseignant' enseignant.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-eye me-2"></i>Voir les classes
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-footer text-muted">
+            Dernière mise à jour : {% now "d/m/Y à H:i" %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-check-input:checked {
+        background-color: #28a745;
+        border-color: #218838;
+    }
+    
+    .form-check-label {
+        margin-left: 0.5rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Liste des élèves{% endblock %}
+
+{% block content %}
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+<form method="get" class="mb-3">
+    <div class="input-group">
+        <input type="text" name="q" class="form-control" placeholder="Rechercher un eleve...">
+        <button type="submit" class="btn btn-success">
+            <i class="fas fa-search"></i>
+        </button>
+    </div>
+</form>
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-success text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="fas fa-user-graduate me-2"></i>Liste des élèves
+                </h2>
+                <a href="{% url 'saisie_eleve' %}" class="btn btn-light">
+                    <i class="fas fa-plus-circle me-2"></i>Ajouter un élève
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nom</th>
+                            <th>Prénom</th>
+                            <th>Classe</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for eleve in eleves %}
+                        <tr>
+                            <td>
+                                <i class="fas fa-user text-success me-2"></i>
+                                {{ eleve.nom }}
+                            </td>
+                            <td>{{ eleve.prenom }}</td>
+                            <td>
+                                <span class="badge bg-primary">
+                                    <i class="fas fa-users me-1"></i>
+                                    {{ eleve.classe.nom }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group" role="group">
+                                     
+                                     <!-- Bouton Saisie semestre 1-->
+                                    <a href="{% url 'saisie_notes_eleve' eleve.id 1 %}" 
+                                       class="btn btn-outline-success btn-sm"
+                                       data-bs-toggle="tooltip"
+                                       title="Saisir notes semestre 1">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <!-- Bouton voir semestre 1-->
+                                    <a href="{% url 'details_notes_eleve' eleve.id 1 %}" 
+                                       class="btn btn-outline-info btn-sm"
+                                       data-bs-toggle="tooltip" 
+                                       title="Voir notes semestre 1">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                     <!-- Bouton imprimer semestre 1 -->
+                                    <a href="{% url 'bulletin_semestre_1' eleve.id %}" 
+                                       class="btn btn-sm btn-outline-primary"
+                                       target="_blank"
+                                       data-bs-toggle="tooltip"
+                                       title="Imprimer bulletin semestre 1">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                      <!-- Bouton Saisie semestre 2-->
+                                    <a href="{% url 'saisie_notes_eleve' eleve.id 2 %}" 
+                                       class="btn btn-outline-success btn-sm"
+                                       data-bs-toggle="tooltip"
+                                       title="Saisir notes semestre 2">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <!-- Bouton voir semestre 2-->
+                                    <a href="{% url 'details_notes_eleve' eleve.id 2 %}" 
+                                       class="btn btn-outline-info btn-sm"
+                                       data-bs-toggle="tooltip" 
+                                       title="Voir notes semestre 2">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <!-- Bouton imprimer semestre 2 -->
+                                    <a href="{% url 'bulletin_semestre_2' eleve.id %}" 
+                                       class="btn btn-sm btn-outline-primary"
+                                       target="_blank"
+                                       data-bs-toggle="tooltip"
+                                       title="Imprimer bulletin semestre 2">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                    <!-- Bouton Choisir les matières -->
+                                        <a href="{% url 'choisir_matieres' eleve.id %}" 
+                                        class="btn btn-sm btn-warning"
+                                        target="_blank"
+                                        data-bs-toggle="tooltip"
+                                        title="Choisir les matières optionnelles">
+                                            <i class="fas fa-book"></i>
+                                        </a>
+                                    <!-- Bouton Modifier -->
+                                    
+                                    <a href="{% url 'modifier_eleve' eleve.id %}" 
+                                        class="btn btn-sm btn-primary me-2" 
+                                        data-bs-toggle="tooltip" 
+                                        title="Modifier cet eleve">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+
+                                    <!-- Bouton Supprimer -->
+                                    <form action="{% url 'supprimer_eleve' eleve.id %}" method="POST" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet eleve ?')" 
+                                                data-bs-toggle="tooltip" 
+                                                title="Supprimer cet eleve">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                   
+                                    
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Aucun élève enregistré
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if eleves.has_other_pages %}
+            <nav aria-label="Pagination">
+                <ul class="pagination justify-content-center">
+                    {% if eleves.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ eleves.previous_page_number }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in eleves.paginator.page_range %}
+                    <li class="page-item {% if num == eleves.number %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+
+                    {% if eleves.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ eleves.next_page_number }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-hover tbody tr:hover {
+        background-color: rgba(76, 175, 80, 0.05);
+    }
+    .btn-group .btn {
+        transition: all 0.3s ease;
+    }
+    .btn-group .btn:hover {
+        transform: translateY(-2px);
+    }
+    .badge {
+        font-size: 0.9em;
+        padding: 0.5em 0.8em;
+    }
+</style>
+
+<script>
+    // Activation des tooltips Bootstrap
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    })
+</script>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Boutons d'action -->
+    <div class="d-flex justify-content-between mt-3 no-print">
+        <a href="javascript:history.back()" class="btn btn-secondary no-print mt-3">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+        <button class="btn btn-primary" onclick="window.print();">
+            <i class="fas fa-print"></i>
+        </button>
+    </div>
+
+    {% for bulletin in bulletins %}
+    <div class="card shadow-lg">
+        <!-- En-tête avec fond bleu -->
+        <div class="card-header bg-primary text-white border-bottom shadow-sm">
+            <div class="container">
+                <div class="row align-items-center">
+                    <!-- Logo de l'établissement -->
+                    <div class="col-md-2 text-start">
+                        {% if eleve.classe.etablissement.logo %}
+                            <img src="{{ eleve.classe.etablissement.logo.url }}" 
+                                 alt="{{ eleve.classe.etablissement.nom }}" 
+                                 class="school-logo rounded-circle shadow-sm"
+                                 style="max-width: 90px; height: auto;">
+                        {% else %}
+                            <img src="{% static 'images/logo-par-defaut.png' %}" 
+                                 alt="Logo par défaut" 
+                                 class="school-logo rounded-circle shadow-sm"
+                                 style="max-width: 90px; height: auto;">
+                        {% endif %}
+                        <div class="mt-1 text-center fw-bold small">
+                            🏫 IA : {{ classe.etablissement.ia }} <br>
+                            🏢 IEF : {{ classe.etablissement.ief }}
+                        </div>
+                    </div>
+                    
+                    <!-- Texte officiel et établissement au centre -->
+                <div class="col-md-8 text-center">
+                    <h4 class="fw-bold text-uppercase" style="font-family: 'Georgia', serif;">RÉPUBLIQUE DU SÉNÉGAL</h4>
+                    <h5 class="fw-bold text-uppercase" style="font-family: 'Georgia', serif;">MINISTÈRE DE L'ÉDUCATION</h5>
+                    <h5 class="fw-bold text-uppercase" style="font-family: 'Georgia', serif;">NATIONALE</h5>
+
+                    <!-- Année scolaire -->
+                    <h6 class="fw-bold mt-2" style="font-family: 'Poppins', sans-serif;">
+                        📅 Année scolaire : {{ annee_scolaire }}
+                    </h6>
+
+                    <!-- Nom de l'établissement -->
+                    <h5 class="fw-bold mt-2 text-warning" style="font-family: 'Arial', sans-serif;">
+                        {{ classe.etablissement.nom }}
+                    </h5>
+                </div>
+
+                    <div class="col-md-2"></div>
+                </div>
+            </div>
+            <!-- Titre Bulletin -->
+        <div class="text-center mt-3">
+            <h5 class="fw-bold" style="font-family: 'Arial Black', sans-serif;">
+                <i class="fas fa-file-alt me-2"></i>Bulletin du 1<sup>er</sup> semestre
+            </h5>
+        </div>
+
+        <div class="row mt-4">
+            <!-- Informations de l'élève -->
+            <div class="col-md-6">
+                <h5 class="fw-bold" style="font-family: 'Poppins', sans-serif;">🎓 {{ bulletin.eleve.prenom }} {{ bulletin.eleve.nom }}</h5>
+                <h6 class="fw-bold text-muted small">📆 Né le : {{ bulletin.eleve.date_naissance|date:"d/m/Y" }}</h6>
+                <h6 class="fw-bold text-muted small">📍 À : {{ bulletin.eleve.lieu_naissance }}</h6>
+            </div>
+
+            <!-- Informations sur la classe -->
+            <div class="col-md-6 text-end">
+                <h5 class="fw-bold">📚 Classe : {{ classe.nom }}</h5>
+                <h5 class="fw-bold">👥 Effectif : {{ total_eleves }}</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <!-- Tableau des matières -->
+<div class="card-body">
+     {% if bulletin.notes_par_matiere %}
+    <table class="table table-hover table-bordered table-sm align-middle text-center" style="border-radius: 10px; overflow: hidden;">
+        <thead class="table-primary text-white" style="background-color: #007bff;">
+            <tr>
+                <th style="width: 20%;">Disciplines</th>
+                <th>Devoirs</th>
+                <th>Composition</th>
+                <th>Moyenne / 20</th>
+                <th>Coefficient</th>
+                <th>Points</th>
+                <th>Rang</th>
+                <th>Appréciations</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for note in bulletin.notes_par_matiere %}
+            <tr class="{% cycle 'table-light' 'table-secondary' %}">
+                <td class="fw-bold text-start ps-3">{{ note.matiere }}</td>
+                <td>{{ note.note_devoir|floatformat:2 }}</td>
+                <td>{{ note.note_composition|floatformat:2 }}</td>
+                <td class="fw-bold {% if note.moyenne_matiere >= 10 %}text-success{% else %}text-danger{% endif %}">
+                    {{ note.moyenne_matiere|floatformat:2 }}
+                </td>
+                <td>{{ note.coefficient }}</td>
+                <td>{{ note.points_matiere|floatformat:2 }}</td>
+                <td class="fw-bold">{{ note.rang_matiere }}<sup>{% if note.rang_matiere == 1 %}er{% else %}ème{% endif %}</sup></td>
+                <td class="text-start ps-3">{{ note.appreciation }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+            
+           <div class="container mt-4">
+    <div class="row border border-primary rounded p-3">
+        <!-- Statistiques générales -->
+        <div class="col-md-4 border-end">
+            <h5 class="text-center text-primary"><i class="fas fa-chart-bar me-2"></i> Statistiques Générales</h5>
+            <ul class="list-unstyled">
+                <li><strong>Total points Semestre 2 :</strong> {{ bulletin.total_points|floatformat:2 }}</li>
+                <li><strong>Moy générale Semestre 2 :</strong> <span class="fw-bold text-success">{{ bulletin.moyenne_generale|floatformat:2 }}/20</span></li>
+                <li><strong>Rang Semestre 2 :</strong> 
+                    <span class="fw-bold">{{ bulletin.rang_semestriel }}<sup>{% if bulletin.rang_semestriel == 1 %}er{% else %}ème{% endif %}</sup> / {{ total_eleves }} el</span>
+                </li>
+                <li><strong>Absences :</strong> <span class="text-danger fw-bold">{{ bulletin.nombre_absences }}</span></li>
+            </ul>
+        </div>
+
+        <!-- Synthèse -->
+        <div class="col-md-4 border-end">
+            <h5 class="text-center text-info"><i class="fas fa-book-open me-2"></i> Synthèse</h5>
+            <ul class="list-unstyled">
+                <li><strong>Moyenne Semestre 1 :</strong> <span class="fw-bold text-success">{{ bulletin.moyenne_semestre_1|floatformat:2 }}/20</span></li>
+                <li><strong>Moyenne Semestre 2 :</strong> <span class="fw-bold text-success">{{ bulletin.moyenne_generale|floatformat:2 }}/20</span></li>
+                <li><strong>Moyenne annuelle :</strong> <span class="fw-bold text-primary">{{ bulletin.moyenne_annuelle|floatformat:2 }}/20</span></li>
+                <li><strong>Rang Annuel :</strong> 
+                    <span class="fw-bold">{{ bulletin.rangs_annuels }}<sup>{% if bulletin.rangs_annuels == 1 %}er{% else %}ème{% endif %}</sup> / {{ total_eleves }}</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Passage en classe supérieure -->
+        <div class="col-md-4 text-center">
+            <h5 class="text-center text-success"><i class="fas fa-graduation-cap me-2"></i> Passage</h5>
+            {% if bulletin.passe_classe == "Oui" %}
+                <p class="text-success fw-bold"><i class="fas fa-check-circle me-2"></i> L'élève passe en classe supérieure</p>
+            {% else %}
+                <p class="text-danger fw-bold"><i class="fas fa-times-circle me-2"></i> L'élève ne passe pas</p>
+            {% endif %}
+
+            <!-- Affichage de la mention -->
+            {% if bulletin.moyenne_annuelle >= 16 %}
+                <p class="text-success fw-bold mt-2"><i class="fas fa-medal me-2"></i> Mention : Très Bien</p>
+            {% elif bulletin.moyenne_annuelle >= 14 %}
+                <p class="text-primary fw-bold mt-2"><i class="fas fa-award me-2"></i> Mention : Bien</p>
+            {% elif bulletin.moyenne_annuelle >= 13 %}
+                <p class="text-info fw-bold mt-2"><i class="fas fa-star me-2"></i> Mention : Assez Bien</p>
+            {% elif bulletin.moyenne_annuelle >= 12 %}
+                <p class="text-warning fw-bold mt-2"><i class="fas fa-trophy me-2"></i> Tableau d'honneur</p>
+            {% elif bulletin.moyenne_annuelle >= 10 %}
+                <p class="text-muted fw-bold mt-2"><i class="fas fa-check me-2"></i> Passable</p>
+            {% elif bulletin.moyenne_annuelle >= 9 %}
+                <p class="text-danger fw-bold mt-2"><i class="fas fa-exclamation-circle me-2"></i> Insuffisant</p>
+            {% elif bulletin.moyenne_annuelle >= 8 %}
+                <p class="text-danger fw-bold mt-2"><i class="fas fa-times me-2"></i> Moyen</p>
+            {% else %}
+                <p class="text-danger fw-bold mt-2"><i class="fas fa-ban me-2"></i> Faible</p>
+            {% endif %}
+        </div>
+    </div>
+</div>            
+            {% else %}
+            <p class="text-muted">Aucune note disponible pour ce semestre.</p>
+            {% endif %}
+             <!-- Section des signatures et appréciations -->
+        <div class="mt-4 border-top pt-3">
+            <div class="d-flex justify-content-between">
+                <!-- Appréciation des professeurs à gauche -->
+                <div class="text-start">
+                    <h6 class="fw-bold text-muted small">Appréciation générale des professeurs :</h6>
+                    <p class="text-muted fst-italic">.................................</p>
+                </div>
+
+                <!-- Visa du chef d'établissement à droite -->
+                <div class="text-end">
+                    <h6 class="fw-bold text-muted small">Visa du chef de l'établissement :</h6>
+                    <p class="text-muted fst-italic">.................................</p>
+                </div>
+            </div>
+        </div>
+        </div>
+        
+        <!-- Pied de page -->
+       <div class="card-footer text-center bg-light footer-fixed">
+            <p class="mb-0">
+                <strong class="fw-bold text-muted small"> {{ classe.etablissement.nom }}</strong><br>
+                <h6 class="fw-bold text-muted small"> {{ classe.etablissement.adresse }} / Telephone : {{ classe.etablissement.telephone }} /  Année scolaire : {{ annee_scolaire }}</h6>
+              </h6>
+            </p>
+        </div>
+    <div class="page-break"></div>
+    {% endfor %}
+</div>
+{% endblock %}

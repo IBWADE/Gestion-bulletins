@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classes de {{ etablissement.nom }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #4CAF50;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .close-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .close-button:hover {
+            background-color: #45a049;
+        }
+        .view-students-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .view-students-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Classes de {{ etablissement.nom }}</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for classe in classes %}
+            <tr>
+                <td>{{ classe.nom }}</td>
+                <td>
+                    <!-- Bouton Voir les élèves -->
+                    <button class="view-students-btn" data-classe-id="{{ classe.id }}" onclick="voirEleves(this)">
+                        Voir les élèves
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Bouton Fermer -->
+    <button class="close-button" onclick="window.close()">Fermer</button>
+
+    <!-- Modal Bootstrap pour afficher les élèves -->
+    <div class="modal fade" id="studentsModal" tabindex="-1" aria-labelledby="studentsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="studentsModalLabel">Élèves de <span id="classeName"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="studentsModalBody">
+                    Chargement en cours...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function voirEleves(button) {
+            const classeId = button.getAttribute('data-classe-id');
+            const modal = new bootstrap.Modal(document.getElementById('studentsModal'));
+            const modalTitle = document.getElementById('studentsModalLabel');
+            const modalBody = document.getElementById('studentsModalBody');
+
+            // Afficher le spinner de chargement
+            modalBody.innerHTML = '<p style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> Chargement...</p>';
+
+            // Récupérer les détails de la classe via AJAX
+            fetch(`/bulletins/liste-eleves-classe-popup/${classeId}/`)
+                .then(response => response.text())
+                .then(html => {
+                    modalBody.innerHTML = html; // Injecter le contenu HTML dans la modal
+                    modal.show(); // Afficher la modal
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des élèves :', error);
+                    modalBody.innerHTML = '<p>Une erreur est survenue.</p>';
+                });
+        }
+
+        // Assurer que la modal se ferme correctement
+        document.addEventListener('DOMContentLoaded', function () {
+            const studentsModal = document.getElementById('studentsModal');
+            const modal = new bootstrap.Modal(studentsModal);
+
+            studentsModal.addEventListener('hidden.bs.modal', function (event) {
+                // Réinitialiser le contenu de la modal après fermeture
+                const modalBody = document.getElementById('studentsModalBody');
+                modalBody.innerHTML = ''; // Effacer le contenu précédent
+            });
+        });
+    </script>
+</body>
+</html>

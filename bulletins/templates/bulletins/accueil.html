@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accueil - Gestion Scolaire</title>
+</head>
+<body>
+    {% block content %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-success text-white text-center">
+                        <h1 class="mb-0">
+                            <i class="fas fa-graduation-cap me-2"></i>Gestion des Bulletins Scolaires
+                        </h1>
+                        <!-- Ajout du logo -->
+                        {% if etablissement.logo %}
+                        <img src="{{ etablissement.logo.url }}" alt="{{ etablissement.nom }}" class="school-logo">
+                        {% else %}
+                        <img src="{% static 'images/logo-par-defaut.png' %}" alt="Logo par défaut" class="school-logo">
+                        {% endif %}
+                    </div>
+
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <!-- Établissements -->
+                            <div class="col-md-6">
+                                <div class="card h-100 hover-scale">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-university fa-3x text-success mb-3"></i>
+                                        <h3>Établissements</h3>
+                                        <div class="d-grid gap-2 mt-3">
+                                            <a href="{% url 'liste_etablissements' %}" class="btn btn-outline-success">
+                                                <i class="fas fa-list me-2"></i>Liste des établissements
+                                            </a>
+                                            <a href="{% url 'saisie_etablissement' %}" class="btn btn-success">
+                                                <i class="fas fa-plus-circle me-2"></i>Nouvel établissement
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Classes -->
+                            <div class="col-md-6">
+                                <div class="card h-100 hover-scale">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                                        <h3>Classes</h3>
+                                        <div class="d-grid gap-2 mt-3">
+                                            <a href="{% url 'liste_classes' %}" class="btn btn-outline-primary">
+                                                <i class="fas fa-list me-2"></i>Liste des classes
+                                            </a>
+                                            <a href="{% url 'saisie_classe' %}" class="btn btn-primary">
+                                                <i class="fas fa-plus-circle me-2"></i>Nouvelle classe
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Élèves -->
+                            <div class="col-md-6">
+                                <div class="card h-100 hover-scale">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-user-graduate fa-3x text-info mb-3"></i>
+                                        <h3>Élèves</h3>
+                                        <div class="d-grid gap-2 mt-3">
+                                            <a href="{% url 'liste_eleves' %}" class="btn btn-outline-info">
+                                                <i class="fas fa-list me-2"></i>Liste des élèves
+                                            </a>
+                                            <a href="{% url 'saisie_eleve' %}" class="btn btn-info">
+                                                <i class="fas fa-plus-circle me-2"></i>Nouvel élève
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Enseignants -->
+                            <div class="col-md-6">
+                                <div class="card h-100 hover-scale">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-chalkboard-teacher fa-3x text-warning mb-3"></i>
+                                        <h3>Enseignants</h3>
+                                        <div class="d-grid gap-2 mt-3">
+                                            <a href="{% url 'liste_enseignants' %}" class="btn btn-outline-warning">
+                                                <i class="fas fa-list me-2"></i>Liste des enseignants
+                                            </a>
+                                            <a href="{% url 'saisie_enseignant' %}" class="btn btn-warning">
+                                                <i class="fas fa-plus-circle me-2"></i>Nouvel enseignant
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bouton de recherche avancée -->
+                        <div class="text-center mt-5">
+                            <a href="{% url 'recherche_globale' %}" class="btn btn-lg btn-danger">
+                                <i class="fas fa-search me-2"></i>Recherche Avancée
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Pied de page avec lien vers statistiques -->
+                    <div class="card-footer bg-light">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h5 class="mb-0">
+                                    <a href="{% url 'statistiques_globales' %}" class="stat-link">
+                                        📊 Statistiques rapides
+                                    </a>
+                                </h5>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <span class="badge bg-success me-2">
+                                    <i class="fas fa-university"></i> Établissements: {{ etablissement_count }}
+                                </span>
+                                <span class="badge bg-primary">
+                                    <i class="fas fa-users"></i> Classes: {{ classe_count }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSS personnalisé -->
+    <style>
+        .hover-scale {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .hover-scale:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            border-radius: 0.5rem 0.5rem 0 0 !important;
+        }
+        .school-logo {
+            display: block;
+            margin: 20px auto;
+            max-width: 150px;
+        }
+        /* Style du lien Statistiques */
+        .stat-link {
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+            transition: color 0.3s, text-shadow 0.3s;
+        }
+        .stat-link:hover {
+            color: #ff5722;
+            text-shadow: 2px 2px 5px rgba(255, 87, 34, 0.5);
+        }
+    </style>
+
+    {% endblock %}
+</body>
+</html>

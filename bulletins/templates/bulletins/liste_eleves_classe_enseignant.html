@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Liste des Élèves - {{ classe.nom }}{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-info text-white text-center">
+            <h2><i class="fas fa-users me-2"></i>Liste des Élèves - {{ classe.nom }}</h2>
+        </div>
+        <div class="card-body">
+            {% if eleves %}
+            <table class="table table-bordered">
+                <thead class="table-light ">
+                    <tr>
+                        <th>Prénom et Nom</th>
+                        <th class="text-center">Actions</th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for eleve in eleves %}
+                    <tr>
+                        <td>{{ eleve.prenom }} {{ eleve.nom }}</td>
+                        <td class="text-center"> <!-- Centre les boutons horizontalement -->
+                            <div class="btn-group d-flex justify-content-center" role="group">  
+                                <!-- Bouton Saisie semestre 1-->
+                                <a href="{% url 'saisie_note_enseignant' eleve.id 1 %}" 
+                                class="btn btn-outline-success btn-sm"
+                                data-bs-toggle="tooltip"
+                                title="Saisir notes semestre 1">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <!-- Bouton Voir semestre 1-->
+                                <a href="{% url 'details_notes_eleve_enseignant' eleve.id 1 %}" 
+                                class="btn btn-outline-info btn-sm"
+                                data-bs-toggle="tooltip" 
+                                title="Voir notes semestre 1">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <!-- Bouton Saisie semestre 2-->
+                                <a href="{% url 'saisie_note_enseignant' eleve.id 2 %}" 
+                                class="btn btn-outline-success btn-sm"
+                                data-bs-toggle="tooltip"
+                                title="Saisir notes semestre 2">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <!-- Bouton Voir semestre 2-->
+                                <a href="{% url 'details_notes_eleve_enseignant' eleve.id 2 %}" 
+                                class="btn btn-outline-info btn-sm"
+                                data-bs-toggle="tooltip" 
+                                title="Voir notes semestre 2">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Aucun élève dans cette classe.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">Cette classe n'a aucun élève inscrit pour le moment.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

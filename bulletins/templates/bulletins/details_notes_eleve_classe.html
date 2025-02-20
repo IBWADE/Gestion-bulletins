@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Détails des notes - {{ eleve.prenom }} {{ eleve.nom }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-success text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="fas fa-file-alt me-2"></i> Détails notes (Semestre {{ semestre }}){{ annee_scolaire }}
+                </h2>
+                
+                <div class="btn-group">
+                    <a href="{% url 'liste_eleves_classe' eleve.classe.id %}" class="btn btn-light">
+                        <i class="fas fa-arrow-left me-2"></i> Retour
+                    </a>
+                    <button onclick="window.print()" class="btn btn-light">
+                        <i class="fas fa-print me-2"></i> Imprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h4 class="text-success">
+                        <i class="fas fa-user-graduate me-2"></i>
+                        {{ eleve.prenom }} {{ eleve.nom }}
+                    </h4>
+                    <p class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        Classe : {{ eleve.classe.nom }}
+                    </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    {% if moyennes_par_matiere %}
+                        <div class="badge bg-primary fs-5">
+                            Moyenne générale : {{ moyenne_generale|floatformat:2 }}/20
+                        </div>
+                        <p class="mt-2">
+                            {% if rang %}
+                                Rang : {{ rang }}<sup>{% if rang == 1 %}er{% else %}ème{% endif %}</sup> / {{ total_eleves }}
+                            {% endif %}
+                        </p>
+                    {% else %}
+                        <div class="badge bg-secondary fs-5">Pas encore de moyenne</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if moyennes_par_matiere %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th>Matière</th>
+                            <th>Coefficient</th>
+                            <th>Devoirs</th>
+                            <th>Composition</th>
+                            <th>Moyenne</th>
+                            <th>Points</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for matiere in moyennes_par_matiere %}
+                        <tr>
+                            <td>{{ matiere.matiere }}</td>
+                            <td class="text-center">{{ matiere.coefficient }}</td>
+                            <td class="text-center">{{ matiere.note_devoir|floatformat:2 }}</td>
+                            <td class="text-center">{{ matiere.note_composition|floatformat:2 }}</td>
+                            <td class="text-center">{{ matiere.moyenne_matiere|floatformat:2 }}</td>
+                            <td class="text-success fw-bold text-center">{{ matiere.points_matiere|floatformat:2 }}</td>
+                            <td class="text-center">
+                                {% if matiere.note_id %}
+                                <a href="{% url 'modifier_note' matiere.note_id %}" 
+                                   class="btn btn-sm btn-primary" 
+                                   data-bs-toggle="tooltip" 
+                                   title="Modifier cette note">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-secondary">
+                        <tr>
+                            <td colspan="5" class="text-end fw-bold">Total des points</td>
+                            <td class="text-success fw-bold text-center">{{ total_points_general|floatformat:2 }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+                <p class="text-muted text-center mt-3">Aucune note enregistrée pour ce semestre.</p>
+            {% endif %}
+        </div>
+
+        <div class="card-footer text-muted">
+            Détail généré le {% now "d/m/Y à H:i" %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .card-header { border-bottom: 2px solid #000; }
+        .btn-group { display: none; }
+        .badge { border: 1px solid #000; }
+    }
+</style>
+{% endblock %}

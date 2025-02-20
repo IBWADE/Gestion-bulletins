@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Connexion{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg border-0 p-4 text-center" style="max-width: 400px; width: 100%;">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0"><i class="fas fa-sign-in-alt me-2"></i>Connexion</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="mb-3 text-center">
+                    <label for="{{ form.username.id_for_label }}" class="form-label fw-bold d-block">Nom d'utilisateur</label>
+                    <div class="input-group justify-content-center">
+                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                        {{ form.username }}
+                    </div>
+                    {% if form.username.errors %}
+                        <div class="invalid-feedback d-block">{{ form.username.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3 text-center">
+                    <label for="{{ form.password.id_for_label }}" class="form-label fw-bold d-block">Mot de passe</label>
+                    <div class="input-group justify-content-center">
+                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                        {{ form.password }}
+                    </div>
+                    {% if form.password.errors %}
+                        <div class="invalid-feedback d-block">{{ form.password.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-success w-100 py-2">
+                    <i class="fas fa-sign-in-alt me-2"></i>Se connecter
+                </button>
+            </form>
+
+            
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Modifier {{ utilisateur.username }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+            <h2><i class="fas fa-user-edit me-2"></i>Modifier {{ utilisateur.username }}</h2>
+             <a href="{% url 'liste_utilisateurs' %}" class="btn btn-light ms-auto">
+                <i class="fas fa-arrow-left me-2"></i>Retour
+            </a>
+        </div>
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="mb-3">
+                    {{ form.username.label_tag }}
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <div class="invalid-feedback d-block">{{ form.username.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.first_name.label_tag }}
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.first_name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.last_name.label_tag }}
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.last_name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.email.label_tag }}
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Afficher le champ Rôle uniquement si l'utilisateur connecté est administrateur -->
+                {% if request.user.is_superuser %}
+                <div class="mb-3">
+                    {{ form.role.label_tag }}
+                    {{ form.role }}
+                    {% if form.role.errors %}
+                        <div class="invalid-feedback d-block">{{ form.role.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-success w-100">
+                    <i class="fas fa-save me-2"></i>Enregistrer
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

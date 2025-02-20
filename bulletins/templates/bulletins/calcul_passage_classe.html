@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">Calcul du Passage en Classe Supérieure {{ annee_scolaire }}</h2>
+        </div>
+        <div class="card-body">
+            <h4>Classe : {{ classe.nom }}</h4>
+            {% if resultats %}
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nom</th>
+                        <th>Moyenne Semestre 1</th>
+                        <th>Moyenne Semestre 2</th>
+                        <th>Moyenne Annuelle</th>
+                        <th>Passage en Classe Supérieure</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for resultat in resultats %}
+                    <tr>
+                        <td>{{ resultat.eleve.prenom }} {{ resultat.eleve.nom }}</td>
+                        <td>{{ resultat.moyenne_semestre_1|floatformat:2 }}/20</td>
+                        <td>{{ resultat.moyenne_semestre_2|floatformat:2 }}/20</td>
+                        <td>{{ resultat.moyenne_annuelle|floatformat:2 }}/20</td>
+                        <td>
+                            {% if resultat.passe_classe %}
+                            <span class="text-success">✔️ Passe en classe supérieure</span>
+                            {% else %}
+                            <span class="text-danger">❌ Ne passe pas</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-center text-muted py-4">Aucun élève trouvé dans cette classe.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

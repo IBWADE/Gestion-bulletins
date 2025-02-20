@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-success text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="fas fa-users-class me-2"></i>Classe {{ classe.nom }}
+                </h2>
+                <button class="btn btn-light btn-sm btn-print" onclick="window.print()" data-bs-toggle="tooltip" title="Imprimer la liste">
+                    <i class="fas fa-print"></i> Imprimer
+                </button>
+            </div>
+        </div>
+        <style>
+                    @media print {
+                .btn-print {
+                    display: none; /* Cache le bouton d'impression */
+                }
+
+                /* Définir la largeur du contenu à 100% de la page imprimée */
+                body {
+                    width: 100%;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                .container {
+                    width: 100%;
+                    max-width: 100%;
+                    padding: 0;
+                }
+
+                .card {
+                    width: 100%;
+                    border: none; /* Supprime les ombres et bordures inutiles */
+                    box-shadow: none;
+                }
+
+                .table {
+                    width: 100%;
+                }
+
+                /* Réduire les marges par défaut du navigateur */
+                @page {
+                    size: A4;
+                    margin: 10mm; /* Ajuste les marges selon le besoin */
+                }
+            }
+
+        </style>
+
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle text-center">
+                    <thead class="table-light ">
+                        <tr>
+                            <th><i class="fas fa-id-card me-1"></i>Nom</th>
+                            <th><i class="fas fa-user me-1"></i>Prénom</th>
+                            <th><i class="fas fa-chart-line me-1"></i>Moyenne Générale</th>
+                            <th><i class="fas fa-trophy me-1"></i>Rang</th>
+                            <th><i class="fas fa-tools me-1"></i>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for eleve in eleves %}
+                        <tr>
+                            <td>{{ eleve.nom }}</td>
+                            <td>{{ eleve.prenom }}</td>
+                            <td>{{ eleve.moyenne_generale|floatformat:2 }}/20</td>
+                            <td>{{ eleve.rang }}<sup>{% if eleve.rang == 1 %}er{% else %}ème{% endif %}</td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                   
+                                    <!-- NOUVEAU : Lien pour imprimer le bulletin -->
+                                   <!-- <a href="{% url 'bulletin_semestre_1' eleve.id %}" 
+                                       class="btn btn-info btn-sm" 
+                                       target="_blank"
+                                       data-bs-toggle="tooltip"
+                                       title="Imprimer le bulletin">
+                                        <i class="fas fa-print"></i>
+                                    </a>-->
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Aucun élève inscrit dans cette classe
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+        </div>
+        <div class="card-footer text-muted">
+            Établissement : {{ classe.etablissement.nom }}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Activation des tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    })
+</script>
+{% endblock %}

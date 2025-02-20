@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-success text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="fas fa-users-class me-2"></i>Classe {{ classe.nom }}
+                </h2>
+                <a href="{% url 'liste_classes' %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left me-2"></i>Retour
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th><i class="fas fa-id-card me-1"></i>Nom</th>
+                            <th><i class="fas fa-user me-1"></i>Prénom</th>
+                            <th><i class="fas fa-chart-line me-1"></i>Moyenne Générale</th>
+                            <th><i class="fas fa-tools me-1"></i>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for eleve in eleves %}
+                        <tr>
+                            <td>{{ eleve.nom }}</td>
+                            <td>{{ eleve.prenom }}</td>
+                            <td>{{ eleve.moyenne_generale|floatformat:2 }}/20</td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <!-- Lien pour consulter les notes sem 1-->
+                                    <a href="{% url 'details_notes_eleve_classe' eleve.id 1 %}" 
+                                       class="btn btn-success btn-sm"
+                                       data-bs-toggle="tooltip" 
+                                       title="Consulter les notes semestre 1">
+                                        <i class="fas fa-file-alt"></i>
+                                    </a>
+                                    <!-- Lien pour saisir/modifier les notes sem 1 -->
+                                    <a href="{% url 'saisie_notes_eleve' eleve.id 1 %}" 
+                                       class="btn btn-primary btn-sm"
+                                       data-bs-toggle="tooltip"
+                                       title="Saisir/modifier les notes semestre 1">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <!-- Lien pour consulter les notes sem 2-->
+                                    <a href="{% url 'details_notes_eleve_classe' eleve.id 2 %}" 
+                                       class="btn btn-success btn-sm"
+                                       data-bs-toggle="tooltip" 
+                                       title="Consulter les notes semestre 2">
+                                        <i class="fas fa-file-alt"></i>
+                                    </a>
+                                    
+                                    <!-- Lien pour saisir/modifier les notes sem 2 -->
+                                    <a href="{% url 'saisie_notes_eleve' eleve.id 2 %}" 
+                                       class="btn btn-primary btn-sm"
+                                       data-bs-toggle="tooltip"
+                                       title="Saisir/modifier les notes semestre2">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <!-- NOUVEAU : Lien pour imprimer le bulletin -->
+                                    <a href="{% url 'bulletin_semestre_1' eleve.id  %}" 
+                                       class="btn btn-info btn-sm" 
+                                       target="_blank"
+                                       data-bs-toggle="tooltip"
+                                       title="Imprimer bulletin semestre 1">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                    <!-- NOUVEAU : Lien pour imprimer le bulletin -->
+                                    <a href="{% url 'bulletin_semestre_2' eleve.id %}" 
+                                       class="btn btn-info btn-sm" 
+                                       target="_blank"
+                                       data-bs-toggle="tooltip"
+                                       title="Imprimer bulletin semestre 2">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Aucun élève inscrit dans cette classe
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'saisie_eleve' %}?classe={{ classe.id }}" 
+                   class="btn btn-success">
+                    <i class="fas fa-plus-circle me-2"></i>Ajouter un élève
+                </a>
+            </div>
+        </div>
+        <div class="card-footer text-muted">
+            Établissement : {{ classe.etablissement.nom }}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Activation des tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    })
+</script>
+{% endblock %}

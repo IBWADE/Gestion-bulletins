@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Mes Classes - {{ enseignant.prenom }} {{ enseignant.nom }}{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white text-center">
+            <h2><i class="fas fa-users me-2"></i>Mes Classes</h2>
+        </div>
+        <div class="card-body">
+            {% if classes %}
+            <table class="table table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nom de la Classe</th>
+                        <th>Établissement</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for classe in classes %}
+                    <tr>
+                        <td>{{ classe.nom }}</td>
+                        <td>{{ classe.etablissement.nom }}</td>
+                        <td>
+                            <a href="{% url 'liste_eleves_classe_enseignant' classe.id %}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-user-graduate me-2"></i>Liste des Élèves
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted">Aucune classe assignée à cet enseignant.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">Aucune classe assignée à cet enseignant pour le moment.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

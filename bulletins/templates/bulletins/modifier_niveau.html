@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Modifier le niveau {{ niveau.get_nom_display }}</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            {{ form.as_p }}
+        </div>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        <a href="{% url 'liste_niveaux' %}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>
+{% endblock %}

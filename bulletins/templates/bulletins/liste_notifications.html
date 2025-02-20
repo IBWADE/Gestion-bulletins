@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Liste des Notifications{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+    <h2 class="m-0"><i class="fas fa-bell me-2"></i>Liste des Notifications</h2>
+    <button class="btn btn-light text-info fw-bold"><a href="{% url 'saisie_notification' %}" class="btn btn-light">
+                    <i class="fas fa-plus-circle me-2"></i>Ajouter 
+                </a></button>
+</div>
+
+        <div class="card-body">
+            {% if notifications %}
+            <table class="table table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Utilisateur</th>
+                        <th>Titre</th>
+                        <th>Message</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for notification in notifications %}
+                    <tr>
+                        <td>{{ notification.utilisateur.get_full_name }}</td>
+                        <td>{{ notification.titre }}</td>
+                        <td>{{ notification.message }}</td>
+                        <td>{{ notification.date|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Aucune notification disponible.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">Aucune notification n'a encore été créée.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

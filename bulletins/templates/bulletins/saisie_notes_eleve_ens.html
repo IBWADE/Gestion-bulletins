@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Saisie des notes - {{ eleve.prenom }} {{ eleve.nom }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-success text-white">
+            <h2 class="mb-0">
+                <i class="fas fa-edit me-2"></i>Saisie des notes pour {{ eleve.prenom }} {{ eleve.nom }}(Semestre {{ semestre }}) {{ annee_scolaire }}
+            </h2>
+        </div>
+
+        <div class="card-body">
+            {% if matieres_restantes %}
+            <div class="mb-4">
+                <h5 class="text-success mb-3">
+                    <i class="fas fa-book-open me-2"></i>Matières restantes à saisir :
+                </h5>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for matiere in matieres_restantes %}
+                    <span class="badge bg-primary">
+                        <i class="fas fa-book me-1"></i>{{ matiere.nom }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {{ form.eleve }}
+                
+                <div class="row g-3">
+                    <!-- Champ Matière (désactivé) -->
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            <select class="form-select" disabled>
+                                <option selected>{{ matiere_selectionnee.nom }}</option>
+                            </select>
+                            <!-- Champ caché pour envoyer la valeur au serveur -->
+                            <input type="hidden" name="{{ form.matiere.name }}" value="{{ form.matiere.value }}">
+                        </div>
+                    </div>
+                    
+                    <!-- Champ Note Devoirs -->
+                    <div class="col-md-3">
+                        <div class="form-floating">
+                            <input type="number" 
+                                   name="{{ form.note_devoir.name }}" 
+                                   id="{{ form.note_devoir.id_for_label }}" 
+                                   class="form-control" 
+                                   step="0.01"
+                                   min="0" 
+                                   max="20"
+                                   value="{{ form.note_devoir.value|default_if_none:'' }}">
+                            <label for="{{ form.note_devoir.id_for_label }}">Note Devoirs</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Champ Note Composition -->
+                    <div class="col-md-3">
+                        <div class="form-floating">
+                            <input type="number" 
+                                   name="{{ form.note_composition.name }}" 
+                                   id="{{ form.note_composition.id_for_label }}" 
+                                   class="form-control" 
+                                   step="0.01"
+                                   min="0" 
+                                   max="20"
+                                   value="{{ form.note_composition.value|default_if_none:'' }}">
+                            <label for="{{ form.note_composition.id_for_label }}">Note Examen</label>
+                        </div>
+                    </div>
+                    <!-- Champ Appréciation -->
+                    <div class="col-md-12">
+                        <div class="form-floating">
+                            <textarea name="{{ form.appreciation.name }}" id="{{ form.appreciation.id_for_label }}" 
+                                    class="form-control" rows="2">{{ form.appreciation.value|default_if_none:'' }}</textarea>
+                            <label for="{{ form.appreciation.id_for_label }}">Appréciation (optionnel)</label>
+                        </div>
+                    </div>
+                     <!-- Champ semestre -->
+                    <div class="col-md-3">
+                        <div class="form-floating">
+                            {{ form.semestre }}
+                            <!--<label for="{{ form.matiere.id_for_label }}" class="form-label">Matière *</label>-->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-between">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-save me-2"></i>Enregistrer et continuer
+                    </button>
+                    <a href="{% url 'liste_eleves_classe_enseignant' eleve.classe.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Retour
+                    </a>
+                </div>
+            </form>
+            {% else %}
+            <div class="alert alert-success">
+                <h5><i class="fas fa-check-circle me-2"></i>Toutes les notes sont saisies !</h5>
+                <a href="{% url 'details_notes_eleve' eleve.id %}" class="btn btn-outline-success mt-2">
+                    <i class="fas fa-file-alt me-2"></i>Consulter le bulletin
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialisation Select2 avec configuration spécifique
+        $('#{{ form.matiere.id_for_label }}').select2({
+            theme: 'bootstrap-5',
+            placeholder: "Sélectionnez une matière",
+            width: '100%',
+            dropdownParent: $('.card-body'),
+            minimumResultsForSearch: 3
+        });
+
+        // Validation des champs numériques
+        $('input[type="number"]').on('input', function() {
+            const value = parseFloat(this.value);
+            if (value < 0) this.value = 0;
+            if (value > 20) this.value = 20;
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Liste des établissements{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-success text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="fas fa-university me-2"></i>Établissements scolaires
+                </h2>
+                <a href="{% url 'saisie_etablissement' %}" class="btn btn-light">
+                    <i class="fas fa-plus-circle me-2"></i>Ajouter
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nom</th>
+                            <th>Adresse</th>
+                            <th>Ville</th>
+                            <th>Pays</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for etablissement in etablissements %}
+                        <tr>
+                            <td>
+                                <i class="fas fa-school text-success me-2"></i>
+                                <strong>{{ etablissement.nom }}</strong>
+                            </td>
+                            <td>{{ etablissement.adresse|default:"-" }}</td>
+                            <td>{{ etablissement.ville }}</td>
+                            <td>
+                                <span class="badge bg-primary">
+                                    <i class="fas fa-globe me-1"></i>
+                                    {{ etablissement.pays }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group" role="group">
+								<!-- Bouton Voir -->
+                                    <a href="{% url 'liste_classes_etablissement_popup' etablissement.id %}"
+                                       class="btn btn-outline-primary btn-sm"
+                                       data-bs-toggle="modal" 
+                                       data-bs-target="#classesModal"
+                                       title="Voir les classes"
+                                       data-etablissement="{{ etablissement.nom }}">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+									<!-- Bouton Modifier -->
+									<a href="{% url 'modifier_etablissement' etablissement.id %}" 
+									   class="btn btn-sm btn-primary me-2" 
+									   data-bs-toggle="tooltip" 
+									   title="Modifier cet établissement">
+										<i class="fas fa-edit"></i>
+									</a>
+                                   <!-- Bouton Supprimer -->
+									<form action="{% url 'supprimer_etablissement' etablissement.id %}" method="POST" style="display: inline;">
+										{% csrf_token %}
+										<button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet établissement ?')" 
+												data-bs-toggle="tooltip" 
+												title="Supprimer cet établissement">
+											<i class="fas fa-trash"></i>
+										</button>
+									</form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Aucun établissement enregistré
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if etablissements.has_other_pages %}
+            <nav aria-label="Pagination">
+                <ul class="pagination justify-content-center mt-4">
+                    {% if etablissements.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ etablissements.previous_page_number }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in etablissements.paginator.page_range %}
+                    <li class="page-item {% if num == etablissements.number %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+
+                    {% if etablissements.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ etablissements.next_page_number }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour l'affichage des classes -->
+<div class="modal fade" id="classesModal" tabindex="-1" aria-labelledby="classesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="classesModalLabel">
+                    <i class="fas fa-users-class me-2"></i>
+                    Classes de <span id="modalEtablissementName"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="classesModalContent">
+                Chargement en cours...
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-hover tbody tr:hover {
+        background-color: rgba(76, 175, 80, 0.05);
+    }
+    .badge {
+        font-size: 0.9em;
+        padding: 0.5em 0.8em;
+    }
+    .modal-header .btn-close {
+        filter: invert(1);
+    }
+</style>
+
+<script>
+    // Gestion du modal Bootstrap
+    document.addEventListener('DOMContentLoaded', function() {
+        const classesModal = document.getElementById('classesModal');
+        
+        classesModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const url = button.getAttribute('href');
+            const etablissementName = button.getAttribute('data-etablissement');
+            
+            document.getElementById('modalEtablissementName').textContent = etablissementName;
+            
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('classesModalContent').innerHTML = html;
+                });
+        });
+    });
+</script>
+{% endblock %}

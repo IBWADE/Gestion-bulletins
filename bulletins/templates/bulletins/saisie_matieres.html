@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Saisie d'une matière{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-success text-white">
+            <h2 class="mb-0">
+                <i class="fas fa-book-open me-2"></i>Saisie d'une matière
+            </h2>
+        </div>
+
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="row g-3">
+                    <!-- Champ Nom -->
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {{ form.nom }}
+                            <label for="{{ form.nom.id_for_label }}">Nom de la matière</label>
+                        </div>
+                        {% if form.nom.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.nom.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Champ Coefficient -->
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {{ form.coefficient }}
+                            <label for="{{ form.coefficient.id_for_label }}">Coefficient</label>
+                        </div>
+                        {% if form.coefficient.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.coefficient.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-between">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-save me-2"></i>Enregistrer
+                    </button>
+                    <a href="{% url 'liste_matieres' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-2"></i>Retour à la liste
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+    }
+    .form-floating input {
+        height: calc(3.5rem + 2px);
+        line-height: 1.25;
+    }
+</style>
+
+<script>
+    // Ajout des classes Bootstrap aux champs du formulaire
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.classList.add('form-control');
+            if(input.hasAttribute('required')) {
+                input.previousElementSibling.innerHTML += ' <span class="text-danger">*</span>';
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-3">Liste des niveaux scolaires</h2>
+
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Nom</th>
+                <th>Matières obligatoires</th>
+                <th>Matières optionnelles</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for niveau in niveaux %}
+            <tr>
+                <td>{{ niveau.get_nom_display }}</td>
+                <td>
+                    {% for matiere in niveau.matieres_obligatoires.all %}
+                        {{ matiere.nom }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        Aucune
+                    {% endfor %}
+                </td>
+                <td>
+                    {% for matiere in niveau.matieres_optionnelles.all %}
+                        {{ matiere.nom }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        Aucune
+                    {% endfor %}
+                </td>
+                <td>
+                    <a href="{% url 'modifier_niveau' niveau.id %}" class="btn btn-sm btn-primary">
+                        Modifier
+                    </a>
+                    <a href="{% url 'supprimer_niveau' niveau.id %}" class="btn btn-sm btn-danger">
+                        Supprimer
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center">Aucun niveau enregistré.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{% url 'ajouter_niveau' %}" class="btn btn-success">Ajouter un niveau</a>
+</div>
+{% endblock %}

@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% block title %}Accueil Parent{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white text-center">
+            <h2><i class="fas fa-user-tie me-2"></i>Accueil Parent {{ enfants_data.0.annee_scolaire }}</h2>
+        </div>
+        <div class="card-body">
+            {% if enfants_data %}
+            <h4>Mes Enfants</h4>
+            <table class="table table-bordered">
+                <thead class="table-light text-center">
+                    <tr>
+                        <th>Prénom et Nom</th>
+                        <th>Classe</th>
+                        <th>Établissement</th>
+                        <th>Moy S1</th>
+                        <th>Rang S1</th>
+                        <th>Moy S2</th>
+                        <th>Rang S2</th>
+                        <th>Moy An</th>
+                        <th>Rang Gén</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enfant_data in enfants_data %}
+                    <tr>
+                        <td>{{ enfant_data.enfant.prenom }} {{ enfant_data.enfant.nom }}</td>
+                        <td>{{ enfant_data.classe }}</td>
+                        <td>{{ enfant_data.etablissement }}</td>
+                        <td class="{% if enfant_data.moyenne_s1 >= 10 %}text-success{% else %}text-danger{% endif %}">
+                            {{ enfant_data.moyenne_s1|floatformat:2 }}
+                        </td>
+                        <td>
+                            {% if enfant_data.moyenne_s1 %}
+                                {{ enfant_data.rang_s1|default_if_none:"N/A" }}<sup>
+                                    {% if enfant_data.rang_s1 == 1 %}ᵉʳ{% else %}ᵉ{% endif %}
+                                </sup>
+                            {% endif %}
+                        </td>
+                        <td class="{% if enfant_data.moyenne_s2 >= 10 %}text-success{% else %}text-danger{% endif %}">
+                            {{ enfant_data.moyenne_s2|floatformat:2 }}
+                        </td>
+                        <td>
+                            {% if enfant_data.moyenne_s2 %}
+                                {{ enfant_data.rang_s2|default_if_none:"N/A" }}<sup>
+                                    {% if enfant_data.rang_s2 == 1 %}ᵉʳ{% else %}ᵉ{% endif %}
+                                </sup>
+                            {% endif %}
+                        </td>
+                        <td class="{% if enfant_data.moyenne_annuelle >= 10 %}text-success{% else %}text-danger{% endif %}">
+                            {{ enfant_data.moyenne_annuelle|floatformat:2 }}
+                        </td>
+                        <td>
+                            {% if enfant_data.moyenne_annuelle %}
+                                {{ enfant_data.rang_general|default_if_none:"N/A" }}<sup>
+                                    {% if enfant_data.rang_general == 1 %}ᵉʳ{% else %}ᵉ{% endif %}
+                                </sup>
+                            {% endif %}
+                        </td>
+                        <td>
+                           <!-- <a href="{% url 'details_notes_eleve' enfant_data.enfant.id 1 %}" 
+                               class="btn btn-sm btn-success">
+                                <i class="fas fa-file-alt me-2"></i>Bul S1
+                            </a>
+                            <a href="{% url 'details_notes_eleve' enfant_data.enfant.id 2 %}" 
+                               class="btn btn-sm btn-success ms-2">
+                                <i class="fas fa-file-alt me-2"></i>Bul S2
+                            </a> -->
+                            <a href="{% url 'detail_enfant' enfant_data.enfant.id %}" 
+                               class="btn btn-sm btn-info ms-2">
+                                <i class="fas fa-info-circle me-2"></i>Détails
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center text-muted">Aucun enfant associé à ce compte.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">Vous n'avez aucun enfant enregistré dans le système.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Graphique comparatif des moyennes annuelles des enfants -->
+    {% if enfants_data %}
+    <div class="card shadow-lg mt-4">
+            <div class="card-header bg-success text-white text-center">
+                <h3><i class="fas fa-chart-bar me-2"></i>Comparaison des Performances</h3>
+            </div>
+        <div class="card-body">
+            <canvas id="enfantsComparisonChart"></canvas>
+            <script>
+                    document.addEventListener("DOMContentLoaded", function () {
+                        var ctx = document.getElementById('enfantsComparisonChart');
+
+                        if (ctx) {  // Vérifier que l'élément existe
+                            var labels = [
+                                {% for enfant_data in enfants_data %}
+                                    "{{ enfant_data.enfant.prenom }} {{ enfant_data.enfant.nom }}",
+                                {% endfor %}
+                            ];
+
+                            var moyennesS1 = [
+                                {% for enfant_data in enfants_data %}
+                                    {{ enfant_data.moyenne_s1|floatformat:"2" }},
+                                {% endfor %}
+                            ];
+
+                            var moyennesS2 = [
+                                {% for enfant_data in enfants_data %}
+                                    {{ enfant_data.moyenne_s2|floatformat:"2" }},
+                                {% endfor %}
+                            ];
+
+                            var moyennesAnn = [
+                                {% for enfant_data in enfants_data %}
+                                    {{ enfant_data.moyenne_annuelle|floatformat:"2" }},
+                                {% endfor %}
+                            ];
+
+                            if (labels.length > 0) {
+                                new Chart(ctx, {
+                                    type: 'bar',
+                                    data: {
+                                        labels: labels,
+                                        datasets: [
+                                            {
+                                                label: 'Moyenne S1',
+                                                data: moyennesS1,
+                                                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                                                borderColor: 'rgba(255, 99, 132, 1)',
+                                                borderWidth: 1
+                                            },
+                                            {
+                                                label: 'Moyenne S2',
+                                                data: moyennesS2,
+                                                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                                                borderColor: 'rgba(54, 162, 235, 1)',
+                                                borderWidth: 1
+                                            },
+                                            {
+                                                label: 'Moyenne Annuelle',
+                                                data: moyennesAnn,
+                                                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                                                borderColor: 'rgba(75, 192, 192, 1)',
+                                                borderWidth: 1
+                                            }
+                                        ]
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        scales: {
+                                            y: {
+                                                beginAtZero: true,
+                                                max: 20
+                                            }
+                                        },
+                                        plugins: {
+                                            legend: {
+                                                display: true,
+                                                position: 'top'
+                                            },
+                                            tooltip: {
+                                                callbacks: {
+                                                    label: function (tooltipItem) {
+                                                        return tooltipItem.dataset.label + ': ' + tooltipItem.raw + '/20';
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                });
+                            } else {
+                                console.warn("Aucune donnée disponible pour le graphique.");
+                            }
+                        } else {
+                            console.error("Élément #enfantsComparisonChart introuvable.");
+                        }
+                    });
+                </script>
+
+
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted text-center">Aucune donnée disponible pour générer le graphique.</p>
+    {% endif %}
+    
+
+  <!-- Section Notifications -->
+            <div class="card shadow-lg mt-4">
+                <div class="card-header bg-info text-white text-center">
+                    <h3><i class="fas fa-bell me-2"></i>Notifications</h3>
+                </div>
+                <div class="card-body">
+                    {% if notifications %}
+                    <ul class="list-group">
+                        {% for notification in notifications %}
+                        <li class="list-group-item">
+                            <strong>{{ notification.titre }}</strong>: {{ notification.message }}
+                            <span class="badge badge-secondary float-end">{{ notification.date|date:"d/m/Y H:i" }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted text-center">Aucune notification pour le moment.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+    <!-- Section Profil Parent -->
+    <div class="card shadow-lg mt-4">
+        <div class="card-header bg-secondary text-white text-center">
+            <h3><i class="fas fa-id-card me-2"></i>Mon Profil</h3>
+        </div>
+        <div class="card-body text-center">
+            <p><strong>Nom :</strong> {{ request.user.last_name }}</p>
+            <p><strong>Prénom :</strong> {{ request.user.first_name }}</p>
+            <p><strong>Email :</strong> {{ request.user.email }}</p>
+            <a href="{% url 'modifier_user' request.user.id %}" class="btn btn-primary">
+                <i class="fas fa-edit me-2"></i>Modifier mon profil
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

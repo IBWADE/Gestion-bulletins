@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Saisie d'un élève{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-success text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="fas fa-user-graduate me-2"></i>Nouvel élève
+                </h2>
+                <a href="{% url 'liste_eleves' %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left me-2"></i>Retour
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="row g-3">
+                
+                    <!-- Champ Prénom -->
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {{ form.prenom }}
+                            <label for="{{ form.prenom.id_for_label }}">Prénom</label>
+                        </div>
+                        {% if form.prenom.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.prenom.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Champ Nom -->
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {{ form.nom }}
+                            <label for="{{ form.nom.id_for_label }}">Nom</label>
+                        </div>
+                        {% if form.nom.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.nom.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Champ Matricule -->
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {{ form.matricule }}
+                            <label for="{{ form.matricule.id_for_label }}">Matricule</label>
+                        </div>
+                        {% if form.matricule.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.matricule.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Champ Date de naissance -->
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {{ form.date_naissance }}
+                            <label for="{{ form.date_naissance.id_for_label }}">Date de naissance</label>
+                        </div>
+                        {% if form.date_naissance.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.date_naissance.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Champ Lieu de naissance -->
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {{ form.lieu_naissance }}
+                            <label for="{{ form.lieu_naissance.id_for_label }}">Lieu de naissance</label>
+                        </div>
+                        {% if form.lieu_naissance.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.lieu_naissance.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Champ Classe -->
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {{ form.classe }}
+                            <label for="{{ form.classe.id_for_label }}">Classe</label>
+                        </div>
+                        {% if form.classe.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.classe.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Champ Parent -->
+                    <div class="col-12">
+                        <div class="form-floating">
+                            {{ form.parent }}
+                            <label for="{{ form.parent.id_for_label }}">Parent</label>
+                        </div>
+                        {% if form.parent.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.parent.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                </div>
+
+                <div class="mt-4 d-flex justify-content-between">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-save me-2"></i>Enregistrer
+                    </button>
+                    <button type="reset" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo me-2"></i>Réinitialiser
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+    }
+    .form-floating input,
+    .form-floating select {
+        height: calc(3.5rem + 2px);
+        line-height: 1.25;
+    }
+</style>
+
+<script>
+    // Initialisation des composants
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ajout des classes Bootstrap aux champs
+        const inputs = document.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.classList.add('form-control');
+            if(input.hasAttribute('required')) {
+                input.previousElementSibling.innerHTML += ' <span class="text-danger">*</span>';
+            }
+        });
+
+        // Configuration du select2 pour les classes
+        $('#{{ form.classe.id_for_label }}').select2({
+            placeholder: "Sélectionnez une classe",
+            allowClear: true,
+            theme: 'bootstrap-5'
+        });
+
+        // Activer le datepicker sur le champ de date de naissance
+        $('#{{ form.date_naissance.id_for_label }}').attr('type', 'date');
+    });
+</script>
+{% endblock %}

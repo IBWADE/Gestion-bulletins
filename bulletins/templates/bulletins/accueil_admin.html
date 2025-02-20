@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Accueil Admin{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-12 text-center">
+            <h1 class="mb-4"><i class="fas fa-user-tie me-2"></i>Accueil Admin</h1>
+        </div>
+    </div>
+
+    <!-- Afficher les messages -->
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li {% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <!-- Liens d'administration -->
+    <div class="card shadow-lg mb-4">
+        <div class="card-header bg-primary text-white text-center">
+            <h3>Gestion des Données</h3>
+        </div>
+        <div class="card-body">
+            <a href="{% url 'liste_etablissements' %}" class="btn btn-primary mb-2">
+                <i class="fas fa-school me-2"></i>Gérer les Établissements
+            </a>
+            <a href="{% url 'liste_classes' %}" class="btn btn-success mb-2">
+                <i class="fas fa-users me-2"></i>Gérer les Classes
+            </a>
+            <a href="{% url 'archiver_annee' %}" class="btn btn-warning mb-2">
+                <i class="fas fa-archive me-2"></i>Archiver une Année Scolaire
+            </a>
+            <a href="{% url 'liste_archives' %}" class="btn btn-info mb-2">
+                <i class="fas fa-box-open me-2"></i>Voir les Archives
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">Saisie d'une note</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            {{ form.eleve }}
+                            <label for="{{ form.eleve.id_for_label }}">Élève *</label>
+                            {% if form.eleve.errors %}
+                                <div class="invalid-feedback d-block">{{ form.eleve.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            {{ form.matiere }}
+                            <label for="{{ form.matiere.id_for_label }}">Matière *</label>
+                            {% if form.matiere.errors %}
+                                <div class="invalid-feedback d-block">{{ form.matiere.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            {{ form.note_devoir }}
+                            <label for="{{ form.note_devoir.id_for_label }}">Note des Devoirs *</label>
+                            {% if form.note_devoir.errors %}
+                                <div class="invalid-feedback d-block">{{ form.note_devoir.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            {{ form.note_composition }}
+                            <label for="{{ form.note_composition.id_for_label }}">Note de Composition *</label>
+                            {% if form.note_composition.errors %}
+                                <div class="invalid-feedback d-block">{{ form.note_composition.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3">
+                            {{ form.semestre }}
+                            <label for="{{ form.semestre.id_for_label }}">Semestre *</label>
+                            {% if form.semestre.errors %}
+                                <div class="invalid-feedback d-block">{{ form.semestre.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save me-2"></i>Enregistrer
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

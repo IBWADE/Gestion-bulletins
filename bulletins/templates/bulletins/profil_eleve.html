@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Profil de {{ eleve.nom }}</h2>
+    <p><strong>Classe :</strong> {{ eleve.classe.nom }}</p>
+    <p><strong>Niveau :</strong> {{ eleve.classe.niveau }}</p>
+    <p><strong>Établissement :</strong> {{ eleve.classe.etablissement.nom }}</p>
+
+    {% if eleve.classe.niveau.nom == "4e" and eleve.classe.etablissement.choix_matiere_quatrieme %}
+        <p><strong>Règle spéciale :</strong> Vous devez choisir entre Physique-Chimie et une langue étrangère.</p>
+    {% endif %}
+
+    <h3>Matières Optionnelles</h3>
+    {% if eleve.choix_matieres.all %}
+        <ul>
+            {% for choix in eleve.choix_matieres.all %}
+                <li>{{ choix.matiere.nom }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Aucune matière optionnelle sélectionnée.</p>
+    {% endif %}
+
+    <a href="{% url 'choisir_matieres_optionnelles' eleve.id %}" class="btn btn-primary">Modifier les matières optionnelles</a>
+    <a href="{% url 'liste_eleves' %}" class="btn btn-secondary">Retour à la liste</a>
+</div>
+{% endblock %}

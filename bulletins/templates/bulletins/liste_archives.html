@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Liste des Archives{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-info text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="fas fa-school me-2"></i>Liste des archives
+                </h2>
+                <a href="{% url 'archiver_annee' %}" class="btn btn-light">
+                    <i class="fas fa-plus-circle me-2"></i>Ajouter une archive
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if archives %}
+            <table class="table table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Année Scolaire</th>
+                        <th>Élève</th>
+                        <th>Classe</th>
+                        <th>Établissement</th>
+                        <th>Moyenne Annuelle</th>
+                        <th>Passe Classe</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for archive in archives %}
+                    <tr>
+                        <td>{{ archive.annee_scolaire }}</td>
+                        <td>{{ archive.eleve.prenom }} {{ archive.eleve.nom }}</td>
+                        <td>{{ archive.classe }}</td>
+                        <td>{{ archive.etablissement }}</td>
+                        <td>{{ archive.moyenne_annuelle|floatformat:2 }}/20</td>              
+                            
+                        <td>
+                            {% if archive.passe_classe %}
+                            <span class="text-success">Oui</span>
+                            {% else %}
+                            <span class="text-danger">Non</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'detail_archive' archive.id %}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-eye me-2"></i>Détails
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Aucune archive disponible.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">Aucune archive n'a encore été créée.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+

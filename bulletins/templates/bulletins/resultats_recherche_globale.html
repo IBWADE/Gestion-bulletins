@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Résultats de la recherche</h2>
+
+    {% if type_recherche == 'eleves_classe' %}
+    <!-- Affichage des élèves d'une classe -->
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h3>Classe : {{ resultats.classe.nom }}</h3>
+        </div>
+        <div class="card-body">
+            {% if resultats.eleves %}
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th><i class="fas fa-id-card me-1"></i>Nom</th>
+                        <th><i class="fas fa-user me-1"></i>Prénom</th>
+                        <th><i class="fas fa-chart-line me-1"></i>Moyenne Générale</th>
+                        <th><i class="fas fa-hashtag me-1"></i>Rang</th>
+                        <th><i class="fas fa-tools me-1"></i>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for eleve in resultats.eleves %}
+                    <tr>
+                        <td>{{ eleve.nom }}</td>
+                        <td>{{ eleve.prenom }}</td>
+                        <td>{{ eleve.moyenne_generale|floatformat:2 }}/20</td>
+                        <td>{{ eleve.rang }}</td>
+                        <td>
+                            <!-- Lien pour imprimer le bulletin -->
+                            <a href="{% url 'impression_bulletin_eleve' eleve.id %}" 
+                               class="btn btn-sm btn-info" 
+                               target="_blank"
+                               data-bs-toggle="tooltip"
+                               title="Imprimer le bulletin">
+                                <i class="fas fa-print"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Aucun élève trouvé dans cette classe.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% elif type_recherche == 'meilleur_eleve' %}
+    <!-- Affichage du meilleur élève -->
+    <div class="card shadow-lg">
+        <div class="card-header bg-success text-white">
+            <h3>Meilleur élève de la classe {{ resultats.classe.nom }}</h3>
+        </div>
+        <div class="card-body text-center">
+            {% if resultats.meilleur_eleve %}
+            <p><strong>Nom :</strong> {{ resultats.meilleur_eleve.prenom }} {{ resultats.meilleur_eleve.nom }}</p>
+            <p><strong>Moyenne :</strong> {{ resultats.meilleur_eleve.moyenne|floatformat:2 }}/20</p>
+            {% else %}
+            <p class="text-muted">Aucun élève trouvé dans cette classe.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% elif type_recherche == 'bulletin_eleve' %}
+    <!-- Affichage du bulletin d'un élève -->
+    <div class="card shadow-lg">
+        <div class="card-header bg-info text-white">
+            <h3>Bulletin de {{ resultats.bulletin.eleve.prenom }} {{ resultats.bulletin.eleve.nom }}</h3>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Matière</th>
+                        <th>Coefficient</th>
+                        <th>Note Devoir</th>
+                        <th>Note Composition</th>
+                        <th>Moyenne</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for note in resultats.bulletin.notes %}
+                    <tr>
+                        <td>{{ note.matiere.nom }}</td>
+                        <td>{{ note.matiere.coefficient }}</td>
+                        <td>{{ note.note_devoir|floatformat:2 }}</td>
+                        <td>{{ note.note_composition|floatformat:2 }}</td>
+                        <td>{{ note.moyenne_calcules|floatformat:2 }}</td>
+                        <td class="fw-bold">{{ note.points_calcules|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Résumé du bulletin -->
+            <div class="summary-panel bg-light p-3 mt-3">
+                <p><strong>Total des points :</strong> {{ resultats.bulletin.total_points|floatformat:2 }}</p>
+                <p><strong>Moyenne générale :</strong> {{ resultats.bulletin.moyenne_generale|floatformat:2 }}/20</p>
+                <p><strong>Rang dans la classe :</strong> {{ resultats.bulletin.rang }}<sup>ème</sup></p>
+            </div>
+        </div>
+    </div>
+
+    {% elif type_recherche == 'classes_enseignant' %}
+    <!-- Affichage des classes d'un enseignant -->
+    <div class="card shadow-lg">
+        <div class="card-header bg-warning text-dark">
+            <h3>Classes enseignées par {{ resultats.enseignant.prenom }} {{ resultats.enseignant.nom }}</h3>
+        </div>
+        <div class="card-body">
+            {% if resultats.classes %}
+            <ul class="list-group">
+                {% for classe in resultats.classes %}
+                <li class="list-group-item">{{ classe.nom }}</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted">Cet enseignant n'a aucune classe attribuée.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% elif type_recherche == 'enseignants_etablissement' %}
+    <!-- Affichage des enseignants d'un établissement -->
+    <div class="card shadow-lg">
+        <div class="card-header bg-danger text-white">
+            <h3>Enseignants de l'établissement {{ resultats.etablissement.nom }}</h3>
+        </div>
+        <div class="card-body">
+            {% if resultats.enseignants %}
+            <ul class="list-group">
+                {% for enseignant in resultats.enseignants %}
+                <li class="list-group-item">{{ enseignant.prenom }} {{ enseignant.nom }}</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted">Aucun enseignant trouvé dans cet établissement.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Message si aucun résultat n'est trouvé -->
+    <p class="text-center text-muted">Aucun résultat correspondant à votre recherche.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Activation des tooltips
+    document.addEventListener('DOMContentLoaded', function () {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}

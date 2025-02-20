@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Saisie d'une classe{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-success text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="fas fa-users-class me-2"></i>Nouvelle classe
+                </h2>
+                <a href="{% url 'liste_classes' %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left me-2"></i>Retour
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="row g-3">
+                    <!-- Champ Nom -->
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {{ form.nom }}
+                            <label for="{{ form.nom.id_for_label }}">Nom de la classe</label>
+                        </div>
+                        {% if form.nom.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.nom.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Champ Niveau -->
+                    <div class="col-md-4">
+                        <div class="form-floating">
+                            {{ form.niveau }}
+                            <label for="{{ form.niveau.id_for_label }}">Niveau</label>
+                        </div>
+                        {% if form.niveau.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.niveau.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Champ Établissement -->
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {{ form.etablissement }}
+                            <label for="{{ form.etablissement.id_for_label }}">Établissement</label>
+                        </div>
+                        {% if form.etablissement.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.etablissement.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-between">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-save me-2"></i>Enregistrer
+                    </button>
+                    <button type="reset" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo me-2"></i>Réinitialiser
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+    }
+    .form-floating input,
+    .form-floating select {
+        height: calc(3.5rem + 2px);
+        line-height: 1.25;
+    }
+</style>
+
+<script>
+    // Ajout des classes Bootstrap et gestion des champs requis
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ajout des classes aux champs
+        const inputs = document.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.classList.add('form-control');
+            if(input.hasAttribute('required')) {
+                input.previousElementSibling.innerHTML += ' <span class="text-danger">*</span>';
+            }
+        });
+
+        // Configuration du select2 pour l'établissement
+        $('#{{ form.etablissement.id_for_label }}').select2({
+            placeholder: "Sélectionnez un établissement",
+            allowClear: true,
+            theme: 'bootstrap-5'
+        });
+    });
+</script>
+{% endblock %}

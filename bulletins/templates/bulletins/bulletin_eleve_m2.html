@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <!-- En-tête avec le nom de l'élève et le logo -->
+            <h2 class="mb-0 d-flex align-items-center justify-content-between">
+                <span>
+                    <i class="fas fa-file-alt me-2"></i>
+                    Bulletin de {{ eleve.prenom }} {{ eleve.nom }}
+                </span>
+                <small class="float-end">Classe : {{ eleve.classe.nom }} | Établissement : {{ eleve.classe.etablissement.nom }}</small>
+            </h2>
+            <!-- Affichage conditionnel du logo -->
+            {% if eleve.classe.etablissement.logo %}
+            <img src="{{ eleve.classe.etablissement.logo.url }}" alt="{{ eleve.classe.etablissement.nom }}" class="school-logo" style="max-width: 80px; display: block; margin: 20px auto;">
+            {% else %}
+            <img src="{% static 'images/logo-par-defaut.png' %}" alt="{{ eleve.classe.etablissement.nom }}" class="school-logo" style="max-width: 80px; display: block; margin: 20px auto;">
+            {% endif %}
+        </div>
+        
+        <div class="card-body">
+            <!-- Tableau des matières -->
+            {% if notes %}
+            <table class="table table-hover table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Matière</th>
+                        <th>Coefficient</th>
+                        <th>Devoirs</th>
+                        <th>Composition</th>
+                        <th>Moyenne</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for note in notes %}
+                    <tr>
+                        <td>{{ note.matiere.nom }}</td>
+                        <td>{{ note.matiere.coefficient }}</td>
+                        <td>{{ note.note_devoir|floatformat:2 }}</td>
+                        <td>{{ note.note_composition|floatformat:2 }}</td>
+                        <td>{{ note.moyenne_calcules|floatformat:2 }}</td>
+                        <td>{{ note.points_calcules|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert alert-warning mt-3">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Aucune note disponible pour cet élève.
+            </div>
+            {% endif %}
+
+            <!-- Résumé global -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <h5 class="card-title text-success">
+                                <i class="fas fa-chart-line me-2"></i>
+                                Synthèse
+                            </h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Total points :</strong> {{ total_points|floatformat:2 }}</li>
+                                <li><strong>Coefficients :</strong> {{ total_coefficients }}</li>
+                                <li><strong>Moyenne générale :</strong> {{ moyenne_generale|floatformat:2 }}/20</li>
+                                <li><strong>Rang dans la classe :</strong> {{ rang }}<sup>{% if rang == 1 %}er{% else %}ème{% endif %}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-info">
+                        <div class="card-body">
+                            <h5 class="card-title text-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Informations
+                            </h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Établissement :</strong> {{ eleve.classe.etablissement.nom }}</li>
+                                <li><strong>Classe :</strong> {{ eleve.classe.nom }}</li>
+                                <li><strong>Date d'émission :</strong> {{ today|date:"d/m/Y" }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mention selon la moyenne -->
+            {% if moyenne_generale >= 16 %}
+            <p class="text-success fw-bold mt-3">Mention : Très Bien</p>
+            {% elif moyenne_generale >= 14 %}
+            <p class="text-success fw-bold mt-3">Mention : Bien</p>
+            {% elif moyenne_generale >= 12 %}
+            <p class="text-success fw-bold mt-3">Mention : Assez Bien</p>
+            {% else %}
+            <p class="text-muted fw-bold mt-3">Aucune mention</p>
+            {% endif %}
+
+            <!-- Pied de page -->
+            <div class="card-footer text-center bg-light">
+                <p class="mb-0">
+                    <strong>{{ eleve.classe.etablissement.nom }}</strong><br>
+                    Année scolaire : {{ annee_scolaire }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
