@@ -4,38 +4,104 @@
 <div class="container mt-4">
     <div class="card shadow-lg">
         <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-    <h2 class="m-0"><i class="fas fa-bell me-2"></i>Liste des Notifications</h2>
-    <button class="btn btn-light text-info fw-bold"><a href="{% url 'saisie_notification' %}" class="btn btn-light">
-                    <i class="fas fa-plus-circle me-2"></i>Ajouter 
-                </a></button>
-</div>
+            <h2 class="m-0"><i class="fas fa-bell me-2"></i> Liste des Notifications</h2>
+            <div>
+                <a href="{% url 'saisie_notification' %}" class="btn btn-light text-info fw-bold me-2">
+                    <i class="fas fa-plus-circle me-2"></i> Ajouter
+                </a>
+                {% if page_obj.paginator.count > 0 %}
+                <form method="post" action="{% url 'vider_notifications' %}" class="d-inline-block"
+                      onsubmit="return confirm('Voulez-vous vraiment supprimer ces notifications ?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="filtre" value="{{ filtre }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Vider les notifications
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
 
         <div class="card-body">
-            {% if notifications %}
-            <table class="table table-bordered">
-                <thead class="table-light">
-                    <tr>
-                        <th>Utilisateur</th>
-                        <th>Titre</th>
-                        <th>Message</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for notification in notifications %}
-                    <tr>
-                        <td>{{ notification.utilisateur.get_full_name }}</td>
-                        <td>{{ notification.titre }}</td>
-                        <td>{{ notification.message }}</td>
-                        <td>{{ notification.date|date:"d/m/Y H:i" }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center text-muted">Aucune notification disponible.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <!-- Formulaire de filtre -->
+            <form method="GET" class="mb-3 d-flex align-items-center">
+                <label for="filtre" class="me-2 fw-bold text-muted">Filtrer :</label>
+                <select name="filtre" class="form-select w-auto me-2">
+                    <option value="">Toutes</option>
+                    <option value="non_lues" {% if request.GET.filtre == "non_lues" %}selected{% endif %}>Non lues</option>
+                    <option value="lues" {% if request.GET.filtre == "lues" %}selected{% endif %}>Lues</option>
+                    <option value="importantes" {% if request.GET.filtre == "importantes" %}selected{% endif %}>Importantes</option>
+                </select>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter"></i> Appliquer
+                </button>
+            </form>
+
+            <!-- Tableau des notifications -->
+            {% if page_obj.paginator.count > 0 %}
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Utilisateur</th>
+                            <th>Titre</th>
+                            <th>Message</th>
+                            <th>Date</th>
+                            <th>Importance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for notification in page_obj %}
+                        <tr class="{% if not notification.lue %}table-warning{% endif %}">
+                            <td>{{ notification.utilisateur.get_full_name }}</td>
+                            <td>{{ notification.titre }}</td>
+                            <td>{{ notification.message }}</td>
+                            <td>{{ notification.date|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if notification.importance == "faible" %}
+                                    <span class="badge bg-secondary">Faible</span>
+                                {% elif notification.importance == "normale" %}
+                                    <span class="badge bg-primary">Normale</span>
+                                {% elif notification.importance == "importance" %}
+                                    <span class="badge bg-danger">Importante</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Aucune notification disponible.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PAGINATION -->
+            <nav aria-label="Pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1&filtre={{ request.GET.filtre }}">&laquo; Première</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&filtre={{ request.GET.filtre }}">Précédente</a>
+                        </li>
+                    {% endif %}
+
+                    <li class="page-item disabled">
+                        <span class="page-link">Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}</span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&filtre={{ request.GET.filtre }}">Suivante</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&filtre={{ request.GET.filtre }}">Dernière &raquo;</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
             {% else %}
             <p class="text-muted text-center">Aucune notification n'a encore été créée.</p>
             {% endif %}

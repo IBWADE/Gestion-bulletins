@@ -48,14 +48,27 @@ class CustomUserForm(forms.ModelForm):
 
 
 class NotificationForm(forms.ModelForm):
+    utilisateur = forms.ModelChoiceField(
+        queryset=CustomUser.objects.filter(role='parent'),  # Filtrer les utilisateurs pour ne montrer que les parents
+        required=True,
+        label="Destinataire (Parent)",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
     class Meta:
         model = Notification
-        fields = ['utilisateur', 'titre', 'message']
+        fields = ['utilisateur', 'titre', 'message', 'importance']  # Ajout de l'utilisateur dans le formulaire
+        labels = {
+            'titre': 'Titre de la notification',
+            'message': 'Message',
+            'importance': 'Importance',
+        }
         widgets = {
-            'utilisateur': forms.Select(attrs={'class': 'form-control'}),
-            'titre': forms.TextInput(attrs={'class': 'form-control'}),
-            'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-        }    
+            'titre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Entrez le titre de la notification'}),
+            'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Rédigez votre message ici...'}),
+            'importance': forms.Select(attrs={'class': 'form-control'}),
+        }
+
 
 
 class AbsenceForm(forms.ModelForm):

@@ -19,6 +19,16 @@ class CustomUser(AbstractUser):
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='parent')
 
+    # Ajouter des méthodes pour vérifier le rôle facilement
+    def is_admin(self):
+        return self.role == 'admin'
+
+    def is_enseignant(self):
+        return self.role == 'enseignant'
+
+    def is_parent(self):
+        return self.role == 'parent'
+
     # Ajouter des related_name personnalisés pour éviter les conflits
     groups = models.ManyToManyField(
         'auth.Group',
@@ -51,15 +61,24 @@ class Absence(models.Model):
 
     
     
-# Modele Notification
+
 class Notification(models.Model):
+    IMPORTANCE_CHOICES = [
+        ('faible', 'Faible'),
+        ('normale', 'Normale'),
+        ('importance', 'Importance'),
+    ]
+
     utilisateur = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='notifications')
     titre = models.CharField(max_length=100)
     message = models.TextField()
     date = models.DateTimeField(default=now)
+    importance = models.CharField(max_length=10, choices=IMPORTANCE_CHOICES, default='normale')
+    lue = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.titre} - {self.utilisateur.username}"   
+        return f"{self.titre} - {self.utilisateur.username} ({self.importance})"
+
     
 
 # Annee scolaire

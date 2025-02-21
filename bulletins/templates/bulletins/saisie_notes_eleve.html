@@ -94,9 +94,7 @@
                     <button type="submit" class="btn btn-success btn-lg">
                         <i class="fas fa-save me-2"></i>Enregistrer et continuer
                     </button>
-                    <a href="javascript:history.back()" class="btn btn-secondary no-print mt-3">
-                        <i class="fas fa-arrow-left"></i> Retour
-                    </a>
+                    <a href="{% url 'liste_eleves' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Retour</a>
                 </div>
             </form>
             {% else %}

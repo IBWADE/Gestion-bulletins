@@ -22,6 +22,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.models import Avg
 import logging
+from django.utils.timezone import now
+from django.http import HttpResponseForbidden, JsonResponse
 
 
 
@@ -200,32 +202,121 @@ def creer_notification_bulletin(sender, instance, created, **kwargs):
 
 
 @login_required
-@user_passes_test(is_admin, login_url='login')
+@user_passes_test(is_admin_or_enseignant, login_url='login')
 def saisie_notification(request):
     if request.method == 'POST':
         form = NotificationForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, "La notification a été créée avec succès.")
-            return redirect('liste_notifications')  # Redirigez vers la liste des notifications après la création
+            notification = form.save(commit=False)
+            notification.date = now()  # Ajouter la date actuelle
+            notification.save()
+            return redirect('liste_notifications')
     else:
         form = NotificationForm()
 
-    context = {
-        'form': form,
-        'title': 'Saisir une notification',
-    }
-    return render(request, 'bulletins/saisie_notification.html', context)   
+    return render(request, 'bulletins/saisie_notification.html', {'form': form})
+ 
 
 
 @login_required
-@user_passes_test(is_admin_or_enseignant, login_url='login')
 def liste_notifications(request):
-    notifications = Notification.objects.all().order_by('-date')  # Trier par date décroissante
+    filtre = request.GET.get('filtre', '')
+
+    if request.user.role == 'admin':  
+        # L'administrateur voit toutes les notifications
+        notifications = Notification.objects.all()
+    elif request.user.role == 'enseignant':  
+        # Récupérer les élèves de l'enseignant
+        eleves_de_enseignant = Eleve.objects.filter(classe__enseignants__user=request.user)
+
+        # Récupérer les parents de ces élèves
+        parents = CustomUser.objects.filter(enfants__in=eleves_de_enseignant).distinct()
+
+        # Sélectionner les notifications adressées aux parents de ses élèves
+        notifications = Notification.objects.filter(utilisateur__in=parents)
+    elif request.user.role == 'parent':  
+        # Le parent voit uniquement ses propres notifications
+        notifications = Notification.objects.filter(utilisateur=request.user)
+    else:
+        notifications = Notification.objects.none()
+
+    # Appliquer les filtres
+    if filtre == "non_lues":
+        notifications = notifications.filter(lue=False)
+    elif filtre == "lues":
+        notifications = notifications.filter(lue=True)
+    elif filtre == "importantes":
+        notifications = notifications.filter(importance='importance')
+
+    notifications = notifications.order_by('-date')
+
+       # Pagination (10 notifications par page)
+    paginator = Paginator(notifications, 10)  # Ajuste le nombre selon ton besoin
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
     context = {
         'notifications': notifications,
+        'filtre': filtre,
+        "page_obj": page_obj,
     }
     return render(request, 'bulletins/liste_notifications.html', context)
+
+
+
+
+
+@login_required
+def marquer_comme_lue(request, notification_id):
+    notification = get_object_or_404(Notification, id=notification_id)
+
+    # Vérifier si l'utilisateur est bien le destinataire de la notification
+    if request.user.role == 'parent' and notification.utilisateur == request.user:
+        notification.lue = True
+        notification.save()
+        return redirect('accueil_parent')  # Redirection vers l'accueil du parent
+    elif request.user.role == 'admin' or request.user.role == 'enseignant':
+        notification.lue = True
+        notification.save()
+        return redirect('liste_notifications')  # Admins et enseignants restent sur la liste
+
+    return HttpResponseForbidden("Vous n'êtes pas autorisé à modifier cette notification.")
+
+
+
+
+
+@login_required
+def marquer_toutes_comme_lues(request):
+    if request.user.is_parent():  # Vérifier si l'utilisateur est un parent
+        Notification.objects.filter(utilisateur=request.user, lue=False).update(lue=True)
+        return redirect('accueil_parent')  # Rediriger vers l'accueil parent
+    
+    elif request.user.is_admin() or request.user.is_enseignant():
+        Notification.objects.filter(utilisateur=request.user, lue=False).update(lue=True)
+        return redirect('liste_notifications')  # Rediriger vers la liste des notifications
+
+    return HttpResponseForbidden("Vous n'êtes pas autorisé à modifier ces notifications.")
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def vider_notifications(request):
+    filtre = request.POST.get('filtre', '')
+
+    notifications = Notification.objects.all()
+
+    # Appliquer le filtre avant suppression
+    if filtre == "non_lues":
+        notifications = notifications.filter(lue=False)
+    elif filtre == "lues":
+        notifications = notifications.filter(lue=True)
+    elif filtre == "importantes":
+        notifications = notifications.filter(importance="importance")  # Correction ici
+
+    notifications.delete()
+    return redirect('liste_notifications')
+
 
 
 

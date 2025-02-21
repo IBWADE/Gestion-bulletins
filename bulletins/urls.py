@@ -128,12 +128,17 @@ urlpatterns = [
 
     # Ajouter un niveau scolaire
     path('niveaux/ajouter/', views.ajouter_niveau, name='ajouter_niveau'),    
-    path('niveaux/', views.liste_niveaux, name='liste_niveaux'),    
-    path('niveaux/<int:niveau_id>/modifier/', views.modifier_niveau, name='modifier_niveau'),    
-    path('niveaux/<int:niveau_id>/supprimer/', views.supprimer_niveau, name='supprimer_niveau'),
+    path('liste-niveaux/', views.liste_niveaux, name='liste_niveaux'),    
+    path('modifier-niveaux/<int:niveau_id>/modifier/', views.modifier_niveau, name='modifier_niveau'),    
+    path('supprimer-niveaux/<int:niveau_id>/supprimer/', views.supprimer_niveau, name='supprimer_niveau'),
 
     # Ajouter une matiere optionnelle
     path('eleve/<int:eleve_id>/choix-matieres/', views.choisir_matieres_optionnelles, name='choisir_matieres_optionnelles'),
+
+    # Marquer comme lue
+    path('notifications/lue/<int:notification_id>/', views.marquer_comme_lue, name='marquer_comme_lue'),
+    path('notifications/lire_toutes/', views.marquer_toutes_comme_lues, name='marquer_toutes_comme_lues'),
+    path('vider-notifications/', views.vider_notifications, name='vider_notifications'),
   
 ]
 
