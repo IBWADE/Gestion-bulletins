@@ -18,6 +18,12 @@
                     {{ form.nom }}
                 </div>
 
+                <!-- Champ ordre visible pour la saisie -->
+                <div class="mb-3">
+                    <label for="{{ form.ordre.id_for_label }}" class="form-label"><strong>{{ form.ordre.label }}</strong></label>
+                    {{ form.ordre }}
+                </div>
+
                 <div class="row">
                     <!-- Matières obligatoires -->
                     <div class="col-md-6">

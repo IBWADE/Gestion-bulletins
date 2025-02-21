@@ -204,19 +204,19 @@ class ClasseForm(forms.ModelForm):
             )
 
 
-
-
 class NiveauScolaireForm(forms.ModelForm):
     class Meta:
         model = NiveauScolaire
-        fields = ['nom', 'matieres_obligatoires', 'matieres_optionnelles']
+        fields = ['nom', 'ordre', 'matieres_obligatoires', 'matieres_optionnelles']
         widgets = {
             'nom': forms.Select(attrs={'class': 'form-control'}),
+            'ordre': forms.NumberInput(attrs={'class': 'form-control'}),  # Ajout du widget pour le champ 'ordre'
             'matieres_obligatoires': forms.CheckboxSelectMultiple(attrs={'class': 'form-check'}),
             'matieres_optionnelles': forms.CheckboxSelectMultiple(attrs={'class': 'form-check'}),
         }
         labels = {
             'nom': 'Nom du niveau scolaire',
+            'ordre': 'Ordre du niveau scolaire',  # Ajout du label pour le champ 'ordre'
             'matieres_obligatoires': 'Matières obligatoires',
             'matieres_optionnelles': 'Matières optionnelles',
         }
@@ -224,7 +224,6 @@ class NiveauScolaireForm(forms.ModelForm):
             'matieres_obligatoires': "Sélectionnez les matières obligatoires pour ce niveau.",
             'matieres_optionnelles': "Sélectionnez les matières optionnelles que les élèves peuvent choisir.",
         }
-
 
 
 class ChoixMatiereForm(forms.Form):

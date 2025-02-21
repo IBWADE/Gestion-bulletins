@@ -103,13 +103,14 @@ class NiveauScolaire(models.Model):
     ]
 
     nom = models.CharField(max_length=10, choices=NOM_NIVEAUX, unique=True)
-    ordre = models.IntegerField(default=1, unique=True)   # Ajout du champ ordre
+    ordre = models.IntegerField(null=True, blank=True)  # Ordre des niveaux
 
     matieres_obligatoires = models.ManyToManyField('Matiere', related_name="niveaux_obligatoires")
     matieres_optionnelles = models.ManyToManyField('Matiere', related_name="niveaux_optionnels", blank=True)
 
     def __str__(self):
         return self.get_nom_display()
+
     
 
 
