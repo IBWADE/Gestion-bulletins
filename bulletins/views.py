@@ -1684,7 +1684,14 @@ def impression_bulletins_classe1(request, classe_id, semestre):
     for eleve in eleves:
         annee_scolaire = eleve.classe.etablissement.annee_scolaire if eleve.classe and eleve.classe.etablissement else "Non définie"
 
-        notes = Note.objects.filter(eleve=eleve, semestre=semestre).annotate(
+        # Récupérer les matières suivies par l'élève
+        matieres_suivies = Matiere.objects.filter(
+            Q(niveaux_obligatoires=classe.niveau) |  
+            Q(id__in=ChoixMatiere.objects.filter(eleve=eleve).values_list('matiere_id', flat=True))
+        ).distinct()
+
+        
+        notes = Note.objects.filter(eleve=eleve, semestre=semestre, matiere__in=matieres_suivies).annotate(
             moyenne_calculee=ExpressionWrapper(
                 (F('note_devoir') + F('note_composition')) / 2.0,
                 output_field=FloatField()
@@ -1718,8 +1725,8 @@ def impression_bulletins_classe1(request, classe_id, semestre):
             rangs_par_matiere[note.matiere.nom] = rang_matiere
             appreciations_par_matiere[note.matiere.nom] = generer_appreciation(note.moyenne_calculee)
         
-            absences = Absence.objects.filter(eleve=eleve, semestre=1)  # Filtrer seulement le semestre 1
-            nombre_absences = absences.count()
+        absences = Absence.objects.filter(eleve=eleve, semestre=semestre)
+        nombre_absences = absences.count()
 
         notes_par_matiere = [
             {
@@ -1732,7 +1739,7 @@ def impression_bulletins_classe1(request, classe_id, semestre):
                 'rang_matiere': rangs_par_matiere.get(matiere, None),
                 'appreciation': appreciations_par_matiere.get(matiere, ""),
             }
-            for matiere in ordre_matieres
+            for matiere in ordre_matieres if matiere in matieres_suivies.values_list('nom', flat=True)
         ]
 
         bulletins.append({
@@ -1742,7 +1749,6 @@ def impression_bulletins_classe1(request, classe_id, semestre):
             'moyenne_generale': moyenne_generale,
             'total_coefficients': total_coefficients,
             'nombre_absences': nombre_absences,
-            
         })
 
     # ✅ Classement général des élèves par moyenne générale
@@ -1769,6 +1775,8 @@ def impression_bulletins_classe1(request, classe_id, semestre):
     return render(request, 'bulletins/impression_bulletins_classe1.html', context)
 
 
+
+
 @login_required
 @user_passes_test(is_admin_or_enseignant, login_url='login')
 def impression_bulletins_classe2(request, classe_id, semestre):
@@ -1791,8 +1799,15 @@ def impression_bulletins_classe2(request, classe_id, semestre):
     for eleve in eleves:
         annee_scolaire = eleve.classe.etablissement.annee_scolaire if eleve.classe and eleve.classe.etablissement else "Non définie"
 
+        # Récupérer les matières suivies par l'élève
+        matieres_suivies = Matiere.objects.filter(
+            Q(niveaux_obligatoires=classe.niveau) |  
+            Q(id__in=ChoixMatiere.objects.filter(eleve=eleve).values_list('matiere_id', flat=True))
+        ).distinct()
+
+
         # Moyenne du semestre actuel
-        notes = Note.objects.filter(eleve=eleve, semestre=semestre).annotate(
+        notes = Note.objects.filter(eleve=eleve, semestre=semestre, matiere__in=matieres_suivies).annotate(
             moyenne_calculee=ExpressionWrapper(
                 (F('note_devoir') + F('note_composition')) / 2.0,
                 output_field=FloatField()
@@ -1860,6 +1875,8 @@ def impression_bulletins_classe2(request, classe_id, semestre):
         nombre_absences = absences.count()
 
         # Organiser les notes selon l'ordre fixé
+        matieres_suivies_noms = set(matieres_suivies.values_list('nom', flat=True))
+
         notes_par_matiere = [
             {
                 'matiere': matiere,
@@ -1871,8 +1888,9 @@ def impression_bulletins_classe2(request, classe_id, semestre):
                 'rang_matiere': rangs_par_matiere.get(matiere, None),
                 'appreciation': appreciations_par_matiere.get(matiere, ""),
             }
-            for matiere in ordre_matieres
+            for matiere in ordre_matieres if matiere in matieres_suivies_noms  # Utilisation de l'ensemble
         ]
+
 
         bulletins.append({
             'eleve': eleve,
