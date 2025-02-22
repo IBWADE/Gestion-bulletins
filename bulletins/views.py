@@ -1016,6 +1016,23 @@ def liste_eleves_classe_enseignant(request, classe_id):
 
 
 
+def generer_appreciation(moyenne):
+    """Retourne une appréciation basée sur la moyenne."""
+    if moyenne >= 16:
+        return "Excellent 🌟"
+    elif moyenne >= 14:
+        return "Très Bien ✅"
+    elif moyenne >= 12:
+        return "Bien 👍"
+    elif moyenne >= 10:
+        return "Assez Bien 🙂"
+    elif moyenne >= 9:
+        return "Passable ⚠️"
+    elif moyenne >= 8:
+        return "Insuffisant ❌"
+    else:
+        return "Faible ❗"
+
 @login_required
 @user_passes_test(is_enseignant, login_url='login')
 def details_notes_eleve_enseignant(request, eleve_id, semestre):
@@ -1043,10 +1060,12 @@ def details_notes_eleve_enseignant(request, eleve_id, semestre):
             ((F('note_devoir') + F('note_composition')) / 2.0) * F('matiere__coefficient'),
             output_field=FloatField()
         )
-    )
+    )    
+    
 
     # Préparer les données pour le contexte
     for note in notes:
+        appreciation = generer_appreciation(note.moyenne_calcul)
         moyennes_par_matiere.append({
             'note_id': note.id,
             'matiere': note.matiere,
@@ -1056,7 +1075,7 @@ def details_notes_eleve_enseignant(request, eleve_id, semestre):
             'moyenne_matiere': note.moyenne_calcul,
             'points_matiere': note.points_calcul,
             'semestre': semestre,
-            'appreciation': note.appreciation,  # Ajout de l'appréciation            
+            'appreciation': appreciation,  # Ajout de l'appréciation            
         })
         total_points_general += note.points_calcul
         total_coefficients += note.matiere.coefficient
