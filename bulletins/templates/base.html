@@ -159,20 +159,29 @@
         <li><a class="dropdown-item" href="{% url 'liste_utilisateurs' %}">
             <i class="fas fa-user-plus me-2"></i>Créer un utilisateur
         </a></li>
-        <li><a class="dropdown-item" href="{% url 'liste_notifications' %}">
-                <i class="fas fa-bell me-2"></i>Liste Notifications
-            </a>
-        </li>
-        <li><a class="dropdown-item" href="{% url 'liste_absences' %}">
-                <i class="fas fa-user-slash me-2"></i>Saisir les absences
-            </a>
-        </li>
+        
         <li><a class="dropdown-item" href="{% url 'liste_archives' %}">
                 <i class="fas fa-archive fa-spin"></i>Liste Archive
             </a>
         </li>
-    </ul>
+    </ul>    
 </li>
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="notifDropdown" role="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            <i class="fas fa-bell me-2"></i>Notification
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="notifDropdown">
+            <li><a class="dropdown-item" href="{% url 'liste_notifications' %}">
+                    <i class="fas fa-bell me-2"></i>Liste Notifications
+                </a>
+            </li>
+            <li><a class="dropdown-item" href="{% url 'liste_absences' %}">
+                    <i class="fas fa-user-slash me-2"></i>Saisir les absences
+                </a>
+            </li>
+        </ul> 
+</li>         
 {% endif %}
 
 
