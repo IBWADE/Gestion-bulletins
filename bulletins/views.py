@@ -2654,10 +2654,7 @@ def statistiques_globales(request):
     eleves_avec_moyenne = Eleve.objects.annotate(
         total_points=Coalesce(
             Sum(
-                ExpressionWrapper(
-                    ((F('note__note_devoir') + F('note__note_composition')) / Value(2.0)) * F('note__matiere__coefficient'),
-                    output_field=FloatField()
-                ),
+                ((F('note__note_devoir') + F('note__note_composition')) / Value(2.0)) * F('note__matiere__coefficient'),
                 filter=Q(note__semestre__in=[1, 2])
             ),
             Value(0.0),
@@ -2665,55 +2662,80 @@ def statistiques_globales(request):
         ),
         total_coefficients=Coalesce(
             Sum(
-                ExpressionWrapper(
-                    F('note__matiere__coefficient'),
-                    output_field=FloatField()
-                ),
+                F('note__matiere__coefficient'),
                 filter=Q(note__semestre__in=[1, 2])
             ),
-            Value(1.0),
+            Value(1.0),  # Pour éviter la division par zéro
             output_field=FloatField()
         ),
         moyenne_annuelle=ExpressionWrapper(
-            F('total_points') / F('total_coefficients'),
+            F('total_points') / Coalesce(F('total_coefficients'), Value(1.0)),
             output_field=FloatField()
         )
     )
+
+    # Nombre d'élèves ayant une moyenne annuelle >= 10
     eleves_reussis = eleves_avec_moyenne.filter(moyenne_annuelle__gte=10).count()
+
+    # Calcul du taux de réussite global
     taux_reussite = (eleves_reussis / total_eleves) * 100 if total_eleves > 0 else 0
 
+    # --- Taux de réussite par classe ---
+    classes = Classe.objects.all()  # Assure-toi que les classes existent bien
+    taux_reussite_globale = []
+    couleurs_reussite = []
+
+    for classe in classes:
+        total_eleves_classe = Eleve.objects.filter(classe=classe).count()
+        eleves_reussis_classe = eleves_avec_moyenne.filter(classe=classe, moyenne_annuelle__gte=10).count()
+        
+        taux_classe = (eleves_reussis_classe / total_eleves_classe) * 100 if total_eleves_classe > 0 else 0
+        taux_reussite_globale.append(taux_classe)
+
+        # Attribution des couleurs en fonction du taux de réussite
+        if taux_classe >= 75:
+            couleurs_reussite.append("#4CAF50")  # Vert pour un bon taux de réussite
+        elif 50 <= taux_classe < 75:
+            couleurs_reussite.append("#FFC107")  # Jaune pour un taux moyen
+        else:
+            couleurs_reussite.append("#F44336")  # Rouge pour un faible taux de réussite
+
+
+      
     # --- Moyenne générale par classe ---
     moyennes_classes = (
-        Classe.objects.annotate(
-            total_points=Coalesce(
-                Sum(
-                    ExpressionWrapper(
-                        ((F('eleve__note__note_devoir') + F('eleve__note__note_composition')) / Value(2.0)) 
-                        * F('eleve__note__matiere__coefficient'),
-                        output_field=FloatField()
-                    ),
-                    filter=Q(eleve__note__semestre__in=[1, 2])
+    Classe.objects.annotate(
+        total_points=Coalesce(
+            Sum(
+                ExpressionWrapper(
+                    ((F('eleve__note__note_devoir') + F('eleve__note__note_composition')) / Value(2.0)) 
+                    * F('eleve__note__matiere__coefficient'),
+                    output_field=FloatField()
                 ),
-                Value(0.0),
-                output_field=FloatField()
+                filter=Q(eleve__note__semestre__in=[1, 2])
             ),
-            total_coefficients=Coalesce(
-                Sum(
-                    ExpressionWrapper(
-                        F('eleve__note__matiere__coefficient'),
-                        output_field=FloatField()
-                    ),
-                    filter=Q(eleve__note__semestre__in=[1, 2])
+            Value(0.0),
+            output_field=FloatField()
+        ),
+        total_coefficients=Coalesce(
+            Sum(
+                ExpressionWrapper(
+                    F('eleve__note__matiere__coefficient'),
+                    output_field=FloatField()
                 ),
-                Value(1.0),
-                output_field=FloatField()
+                filter=Q(eleve__note__semestre__in=[1, 2])
             ),
-            moyenne_generale=ExpressionWrapper(
-                F('total_points') / F('total_coefficients'),
-                output_field=FloatField()
-            )
-        ).order_by('-moyenne_generale')
-    )
+            Value(0.0),  # Remplacez Value(1.0) par Value(0.0) pour éviter des divisions incorrectes
+            output_field=FloatField()
+        ),
+        moyenne_generale=Case(
+            When(total_coefficients__gt=0, then=F('total_points') / F('total_coefficients')),
+            default=Value(0.0),
+            output_field=FloatField()
+        )
+    ).filter(total_coefficients__gt=0)  # Exclut les classes sans notes
+    .order_by('-moyenne_generale')
+)
 
     # --- Premiers de chaque classe ---
     premiers_par_classe = []
@@ -2741,14 +2763,16 @@ def statistiques_globales(request):
                         ),
                         filter=Q(note__semestre__in=[1, 2])
                     ),
-                    Value(1.0),
+                    Value(0.0),
                     output_field=FloatField()
                 ),
-                moyenne_annuelle=ExpressionWrapper(
-                    F('total_points') / F('total_coefficients'),
+                moyenne_annuelle=Case(
+                    When(total_coefficients__gt=0, then=F('total_points') / F('total_coefficients')),
+                    default=Value(0.0),
                     output_field=FloatField()
                 )
             )
+            .filter(total_coefficients__gt=0)  # Exclut les élèves sans moyenne
             .order_by('-moyenne_annuelle')
             .first()
         )
@@ -2760,11 +2784,44 @@ def statistiques_globales(request):
                 'moyenne_annuelle': premier.moyenne_annuelle
             })
 
+
     # Trier les premiers de chaque classe par moyenne annuelle décroissante
     premiers_par_classe.sort(key=lambda x: x['moyenne_annuelle'], reverse=True)
 
 
     # --- Trois meilleurs élèves de l'établissement ---
+    meilleurs_eleves_etablissement = (
+    Eleve.objects.annotate(
+        total_points=Coalesce(
+            Sum(
+                ExpressionWrapper(
+                    ((F('note__note_devoir') + F('note__note_composition')) / Value(2.0)) 
+                    * F('note__matiere__coefficient'),
+                    output_field=FloatField()
+                ),
+                filter=Q(note__semestre__in=[1, 2])
+            ),
+            Value(0.0),
+            output_field=FloatField()
+        ),
+        total_coefficients=Coalesce(
+            Sum(
+                ExpressionWrapper(
+                    F('note__matiere__coefficient'),
+                    output_field=FloatField()
+                ),
+                filter=Q(note__semestre__in=[1, 2])
+            ),
+            Value(1.0),
+            output_field=FloatField()
+        ),
+        moyenne_annuelle=ExpressionWrapper(
+            F('total_points') / F('total_coefficients'),
+            output_field=FloatField()
+        )
+    )
+    .order_by('-moyenne_annuelle')[:3]  # Garde les 3 meilleurs
+)
     meilleurs_eleves_etablissement = (
         Eleve.objects.annotate(
             total_points=Coalesce(
@@ -2787,19 +2844,54 @@ def statistiques_globales(request):
                     ),
                     filter=Q(note__semestre__in=[1, 2])
                 ),
-                Value(1.0),
+                Value(0.0),  # Ici on met 0.0 au lieu de 1.0 pour bien exclure les élèves sans note
                 output_field=FloatField()
             ),
-            moyenne_annuelle=ExpressionWrapper(
-                F('total_points') / F('total_coefficients'),
+            moyenne_annuelle=Case(
+                When(total_coefficients__gt=0, then=F('total_points') / F('total_coefficients')),
+                default=Value(0.0),
                 output_field=FloatField()
             )
+
         )
-        .order_by('-moyenne_annuelle')[:3]
+        .filter(total_coefficients__gt=0)  # Exclure les élèves sans note
+        .order_by('-moyenne_annuelle')[:3]  # Garde les 3 meilleurs
     )
-    taux_echec = 100 - taux_reussite  # Calcul du taux d'échec
+
 
     # --- Trois mauvais élèves de l'établissement ---
+    mauvais_eleves_etablissement = (
+    Eleve.objects.annotate(
+        total_points=Coalesce(
+            Sum(
+                ExpressionWrapper(
+                    ((F('note__note_devoir') + F('note__note_composition')) / Value(2.0)) 
+                    * F('note__matiere__coefficient'),
+                    output_field=FloatField()
+                ),
+                filter=Q(note__semestre__in=[1, 2])
+            ),
+            Value(0.0),
+            output_field=FloatField()
+        ),
+        total_coefficients=Coalesce(
+            Sum(
+                ExpressionWrapper(
+                    F('note__matiere__coefficient'),
+                    output_field=FloatField()
+                ),
+                filter=Q(note__semestre__in=[1, 2])
+            ),
+            Value(1.0),
+            output_field=FloatField()
+        ),
+        moyenne_annuelle=ExpressionWrapper(
+            F('total_points') / F('total_coefficients'),
+            output_field=FloatField()
+        )
+    )
+    .order_by('moyenne_annuelle')[:3]  # Garde les 3 derniers
+)
     mauvais_eleves_etablissement = (
         Eleve.objects.annotate(
             total_points=Coalesce(
@@ -2822,17 +2914,22 @@ def statistiques_globales(request):
                     ),
                     filter=Q(note__semestre__in=[1, 2])
                 ),
-                Value(1.0),
+                Value(0.0),
                 output_field=FloatField()
             ),
-            moyenne_annuelle=ExpressionWrapper(
-                F('total_points') / F('total_coefficients'),
+           moyenne_annuelle=Case(
+                When(total_coefficients__gt=0, then=F('total_points') / F('total_coefficients')),
+                default=Value(0.0),
                 output_field=FloatField()
             )
+
         )
-        .order_by('moyenne_annuelle')[:3]  # Tri des plus faibles moyennes en premier
+        .filter(total_coefficients__gt=0)  # Exclure les élèves sans note
+        .order_by('moyenne_annuelle')[:3]  # Garde les 3 derniers
     )
 
+    taux_echec = 100 - taux_reussite  # Calcul du taux d'échec
+    
 
     context = {
         'total_etablissements': total_etablissements,
@@ -2849,6 +2946,10 @@ def statistiques_globales(request):
         'premiers_par_classe': premiers_par_classe,
         'meilleurs_eleves_etablissement': meilleurs_eleves_etablissement,
         'mauvais_eleves_etablissement':mauvais_eleves_etablissement,
+               
+        "taux_reussite_globale": taux_reussite_globale,
+        "couleurs_reussite": couleurs_reussite,
+        "classes": classes
     }
     return render(request, 'bulletins/statistiques_globales.html', context)
 

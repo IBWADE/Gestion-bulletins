@@ -109,11 +109,7 @@ class NiveauScolaire(models.Model):
     matieres_optionnelles = models.ManyToManyField('Matiere', related_name="niveaux_optionnels", blank=True)
 
     def __str__(self):
-        return self.get_nom_display()
-
-    
-
-
+        return self.get_nom_display()  
 
 
 

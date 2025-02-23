@@ -370,50 +370,82 @@
 
     
              <!-- Taux de Réussite Global -->
-           <div class="card shadow-lg mt-4 p-3" style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 15px;">
+<div class="card shadow-lg mt-4 p-3" style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 15px;">
     <div class="card-body text-center">
         <h3 class="text-success fw-bold">
             <i class="fas fa-trophy me-2"></i> Taux de Réussite Global
         </h3>
+
         <div class="row align-items-center">
             <div class="col-md-6">
                 <canvas id="tauxReussiteChart" style="max-height: 300px;"></canvas>
             </div>
+            
             <div class="col-md-6">
-                <h1 class="display-4 text-success fw-bold">{{ taux_reussite }}%</h1>
+                {% if taux_reussite > 0 %}
+                    {% if taux_reussite >= 50 %}
+                        <h1 class="display-4 text-success fw-bold">{{ taux_reussite }}%</h1>
+                    {% elif taux_reussite >= 30 %}
+                        <h1 class="display-4 text-warning fw-bold">{{ taux_reussite }}%</h1>
+                    {% else %}
+                        <h1 class="display-4 text-danger fw-bold">{{ taux_reussite }}%</h1>
+                    {% endif %}
+                {% endif %}
                 <p class="text-muted">des élèves ont réussi cette année.</p>
             </div>
         </div>
     </div>
 </div>
 
+
 <script>
-    var ctx = document.getElementById('tauxReussiteChart').getContext('2d');
-    var chart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Réussite', 'Échec'],
-            datasets: [{
-                data: [{{ taux_reussite }}, {{ taux_echec }}],
-                backgroundColor: ['rgba(75, 192, 192, 0.8)', 'rgba(255, 99, 132, 0.8)'],
-                borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
-                borderWidth: 2,
-                hoverOffset: 8
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: {
-                        font: {
-                            size: 14
+    document.addEventListener("DOMContentLoaded", function () {
+        var ctx = document.getElementById('tauxReussiteChart').getContext('2d');
+
+        // Définition des variables en JavaScript avec une vérification Django
+        var tauxReussite = parseFloat("{{ taux_reussite|default:0 }}");
+        var tauxEchec = parseFloat("{{ taux_echec|default:0 }}");
+
+        // Vérification que les valeurs sont bien valides
+        if (!isNaN(tauxReussite) && !isNaN(tauxEchec)) {
+            var chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Réussite', 'Échec'],
+                    datasets: [{
+                        data: [tauxReussite, tauxEchec],
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.8)', // Vert pour réussite
+                            'rgba(255, 99, 132, 0.8)'  // Rouge pour échec
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 2,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 14
+                                }
+                            }
                         }
                     }
                 }
-            }
+            });
+
+            // Forcer la mise à jour du graphique après création
+            chart.update();
+        } else {
+            console.error("Les valeurs taux_reussite et taux_echec ne sont pas valides.");
         }
     });
 </script>
