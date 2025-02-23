@@ -141,6 +141,9 @@
         <li><a class="dropdown-item" href="{% url 'liste_etablissements' %}">
             <i class="fas fa-building me-2"></i>Établissements
         </a></li>
+        <li><a class="dropdown-item" href="{% url 'liste_matieres' %}">
+            <i class="fas fa-book-open me-2"></i>Matières
+        </a></li>
         <li><a class="dropdown-item" href="{% url 'liste_niveaux' %}">
             <i class="fas fa-layer-group me-2"></i>Niveaux
         </a></li>
@@ -150,15 +153,11 @@
         <li><a class="dropdown-item" href="{% url 'liste_eleves' %}">
             <i class="fas fa-user-graduate me-1"></i>Eleves
         </a></li>
-        <li><a class="dropdown-item" href="{% url 'liste_matieres' %}">
-            <i class="fas fa-book-open me-2"></i>Matières
-        </a></li>
+        
         <li><a class="dropdown-item" href="{% url 'liste_enseignants' %}">
             <i class="fas fa-chalkboard-teacher me-2"></i>Enseignants
         </a></li>                            
-        <li><a class="dropdown-item" href="{% url 'liste_utilisateurs' %}">
-            <i class="fas fa-user-plus me-2"></i>Créer un utilisateur
-        </a></li>
+       
         
         <li><a class="dropdown-item" href="{% url 'liste_archives' %}">
                 <i class="fas fa-archive fa-spin"></i>Liste Archive
@@ -181,7 +180,19 @@
                 </a>
             </li>
         </ul> 
-</li>         
+</li>    
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            <i class="fas fa-user-plus me-2"></i>Utilisateurs
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="userDropdown"> 
+             <li><a class="dropdown-item" href="{% url 'liste_utilisateurs' %}">
+                <i class="fas fa-user-plus me-2"></i>Créer un utilisateur
+                </a>
+             </li>
+        </ul>
+</li>            
 {% endif %}
 
 
