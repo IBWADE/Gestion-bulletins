@@ -1,40 +1,61 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
-    <h2>Choix des matières optionnelles pour {{ eleve.prenom }} {{ eleve.nom }}</h2>
+<div class="container mt-4">
+    <div class="card shadow-lg w-75 mx-auto">  <!-- Réduction de la largeur -->
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Choix des matières optionnelles</h4>
+            <a href="{% url 'liste_eleves' %}" class="btn btn-light">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+        </div>
+        <div class="card-body">
+            <h5 class="text-center mb-3 text-secondary">
+                Sélectionnez les matières optionnelles de <strong>{{ eleve.prenom }} {{ eleve.nom }}</strong>
+            </h5>
 
-    {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-                <li class="{{ message.tags }}">{{ message }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
 
-   <form method="post">
-    {% csrf_token %}
-    
-    <p><strong>Matières optionnelles disponibles :</strong></p>
-    
-    {{ form.matieres.errors }}  <!-- Affiche les erreurs s'il y en a -->
-    <ul>
-    {% for matiere in form.fields.matieres.queryset %}
-        <li>
-            <label>
-                <input type="checkbox" name="matieres" value="{{ matiere.id }}"
-                    {% if matiere.id in form.initial.matieres %}checked{% endif %}>
-                {{ matiere.nom }}
-            </label>
-        </li>
-    {% empty %}
-        <li>Aucune matière optionnelle disponible.</li>
-    {% endfor %}
-</ul>
+            <form method="post">
+                {% csrf_token %}
 
+                <!-- ✅ Cadre réduit avec fond gris pour le titre -->
+                <div class="border border-primary p-3 rounded w-75 mx-auto"> 
+                    <p class="fw-bold text-primary bg-light p-2 rounded text-center">
+                        Matières optionnelles disponibles :
+                    </p>
 
-    <button type="submit">Valider mes choix</button>
-</form>
+                    {% if form.fields.matieres.queryset %}
+                        <div class="d-flex flex-column align-items-center">
+                            {% for matiere in form.fields.matieres.queryset %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="matieres" value="{{ matiere.id }}"
+                                        {% if matiere.id in form.initial.matieres %}checked{% endif %} id="matiere{{ matiere.id }}">
+                                    <label class="form-check-label" for="matiere{{ matiere.id }}">
+                                        {{ matiere.nom }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">Aucune matière optionnelle disponible.</p>
+                    {% endif %}
+                </div>
 
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check"></i> Valider mes choix
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}

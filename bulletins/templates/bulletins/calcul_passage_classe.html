@@ -3,9 +3,13 @@
 {% block content %}
 <div class="container mt-4">
     <div class="card shadow-lg">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h2 class="mb-0">Calcul du Passage en Classe Supérieure {{ annee_scolaire }}</h2>
+            <a href="{% url 'liste_classes' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
         </div>
+        
         <div class="card-body">
             <h4>Classe : {{ classe.nom }}</h4>
             {% if resultats %}
