@@ -1696,7 +1696,7 @@ def impression_bulletins_classe1(request, classe_id, semestre):
     
     ordre_matieres = [
         "Rédaction", "Orthographe", "Texte suivi de questions", "Mathématiques",
-        "Science Physique", "Anglais", "Espagnol", "Histoire/Géographie", "Education civique",
+        "Science Physique", "Anglais", "Arabe", "Espagnol", "Histoire/Géographie", "Education civique",
         "Sc. De Vie et de la terre", "Economie familiale", "Ed. Physique et Sportive"
     ]
     # ✅ Initialisation d'annee_scolaire pour éviter l'erreur si eleves est vide
@@ -1813,7 +1813,7 @@ def impression_bulletins_classe2(request, classe_id, semestre):
 
     ordre_matieres = [
         "Rédaction", "Orthographe", "Texte suivi de questions", "Mathématiques",
-        "Science Physique", "Anglais", "Espagnol", "Histoire/Géographie", "Education civique",
+        "Science Physique", "Anglais", "Arabe", "Espagnol", "Histoire/Géographie", "Education civique",
         "Sc. De Vie et de la terre", "Economie familiale", "Ed. Physique et Sportive"
     ]
     # ✅ Initialisation d'annee_scolaire pour éviter l'erreur si eleves est vide
@@ -2305,7 +2305,7 @@ def bulletin_semestre_1(request, eleve_id):
     # Ordre d'affichage des matières
     ordre_matieres = [
         "Rédaction", "Orthographe", "Texte suivi de questions", "Mathématiques",
-        "Science Physique", "Anglais", "Espagnol", "Histoire/Géographie", "Education civique",
+        "Science Physique", "Anglais", "Arabe", "Espagnol", "Histoire/Géographie", "Education civique",
         "Sc. De Vie et de la terre", "Economie familiale", "Ed. Physique et Sportive"
     ]
 
@@ -2427,7 +2427,7 @@ def bulletin_semestre_2(request, eleve_id):
     # Ordre d'affichage des matières
     ordre_matieres = [
         "Rédaction", "Orthographe", "Texte suivi de questions", "Mathématiques",
-        "Science Physique", "Anglais", "Espagnol", "Histoire/Géographie", "Education civique",
+        "Science Physique", "Anglais", "Arabe", "Espagnol", "Histoire/Géographie", "Education civique",
         "Sc. De Vie et de la terre", "Economie familiale", "Ed. Physique et Sportive"
     ]
 

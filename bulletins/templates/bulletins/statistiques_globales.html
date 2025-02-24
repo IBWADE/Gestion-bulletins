@@ -206,8 +206,6 @@
     });
 </script>
 
-
-
    <!-- Graphique des Premiers de Chaque Classe -->         
  <div class="card shadow-lg mt-4 p-3" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border-radius: 15px;">
     <div class="card-body text-center">
@@ -223,7 +221,7 @@
                 <ul class="list-group list-group-flush">
                     {% for premier in premiers_par_classe %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span class="fw-bold">{{ premier.premier.nom }} ({{ premier.classe }})</span>
+                            <span class="fw-bold">{{ premier.premier.prenom }} {{ premier.premier.nom }} ({{ premier.classe }})</span>
                             <span class="badge bg-success fs-5">{{ premier.moyenne_annuelle|floatformat:"2" }}</span>
                         </li>
                     {% endfor %}

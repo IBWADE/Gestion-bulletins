@@ -96,10 +96,13 @@ class AnneeScolaire(models.Model):
 #Ce modèle permettra de définir les règles pour chaque niveau (sixième, cinquième, etc.).
 class NiveauScolaire(models.Model):
     NOM_NIVEAUX = [
-        ('6e', 'Sixième'),
-        ('5e', 'Cinquième'),
-        ('4e', 'Quatrième'),
-        ('3e', 'Troisième'),
+        ('6e', '6ᵉ (Sixième)'),  
+        ('5e', '5ᵉ (Cinquième)'),
+        ('4e', '4ᵉ (Quatrième)'),
+        ('3e', '3ᵉ (Troisième)'),
+        ('2nde', '2ⁿᵈᵉ (Seconde)'),  # "nde" en exposant
+        ('1ere', '1ʳᵉ (Première)'),  # "re" en exposant
+        ('Tle', 'Tᵉʳᵐ (Terminale)')  # Abréviation Terminale
     ]
 
     nom = models.CharField(max_length=10, choices=NOM_NIVEAUX, unique=True)
@@ -109,7 +112,7 @@ class NiveauScolaire(models.Model):
     matieres_optionnelles = models.ManyToManyField('Matiere', related_name="niveaux_optionnels", blank=True)
 
     def __str__(self):
-        return self.get_nom_display()  
+        return self.get_nom_display()
 
 
 
