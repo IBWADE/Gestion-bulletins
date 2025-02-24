@@ -2073,10 +2073,11 @@ def recherche_globale(request):
                 classes = enseignant.classes.all()
                 resultats = {'classes': classes, 'enseignant': enseignant}
 
-            # 🔹 Enseignants d'un établissement
+           # 🔹 Enseignants d'un établissement
             elif type_recherche == 'enseignants_etablissement' and etablissement:
-                enseignants = Enseignant.objects.filter(classes__etablissement=etablissement).distinct()
+                enseignants = Enseignant.objects.filter(classes__etablissement=etablissement).distinct().prefetch_related('matieres')
                 resultats = {'enseignants': enseignants, 'etablissement': etablissement}
+
 
             # 🔹 Liste des classes d'un établissement
             elif type_recherche == 'liste_classes_etablissement' and etablissement:

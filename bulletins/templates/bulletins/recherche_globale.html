@@ -111,15 +111,27 @@
 
 
    {% if resultats.bulletins_classe %}
-    <h2>Bulletins de la classe {{ resultats.bulletins_classe.nom }} - Semestre : {{ resultats.semestre }}</h2>
-    <a href="{% if resultats.semestre|add:0 == 1 %}
-                 {% url 'impression_bulletins_classe1' resultats.bulletins_classe.id resultats.semestre %}
-             {% else %}
-                 {% url 'impression_bulletins_classe2' resultats.bulletins_classe.id resultats.semestre %}
-             {% endif %}"  
-       class="btn btn-primary" target="_blank">
-        Imprimer les bulletins
-    </a>
+       <div class="container mt-4">
+        <div class="card shadow-sm border-primary mx-auto" style="max-width: 500px;">
+            <div class="card-header bg-primary text-white text-center">
+                <h5 class="mb-0">Bulletins de la classe</h5>
+            </div>
+            <div class="card-body text-center">
+                <h6 class="fw-bold">Classe : {{ resultats.bulletins_classe.nom }}</h6>
+                <p>Semestre : <strong>{{ resultats.semestre }}</strong></p>
+
+                <a href="{% if resultats.semestre|add:0 == 1 %}
+                            {% url 'impression_bulletins_classe1' resultats.bulletins_classe.id resultats.semestre %}
+                        {% else %}
+                            {% url 'impression_bulletins_classe2' resultats.bulletins_classe.id resultats.semestre %}
+                        {% endif %}"  
+                class="btn btn-primary" target="_blank">
+                    <i class="fas fa-print"></i> Imprimer les bulletins
+                </a>
+            </div>
+        </div>
+    </div>
+
 {% endif %}
 
     {% if type_recherche == 'classes_enseignant' and resultats.classes %}
@@ -137,20 +149,46 @@
         </div>
     {% endif %}
 
-    {% if type_recherche == 'enseignants_etablissement' and resultats.enseignants %}
+        {% if type_recherche == 'enseignants_etablissement' and resultats.enseignants %}
         <div class="card shadow mb-4">
             <div class="card-header bg-danger text-white">
-                <h3>Enseignants de l'établissement {{ resultats.etablissement.nom }}</h3>
+                <h3 class="text-center">Enseignants de l'établissement {{ resultats.etablissement.nom }} | <button class="btn btn-light btn-sm btn-print" onclick="window.print()" data-bs-toggle="tooltip" title="Imprimer la liste" target="_blank">
+                    <i class="fas fa-print"></i> Imprimer
+                </button></h3>
+                
             </div>
             <div class="card-body">
-                <ul class="list-group">
-                    {% for enseignant in resultats.enseignants %}
-                        <li class="list-group-item">{{ enseignant.prenom }} {{ enseignant.nom }}</li>
-                    {% endfor %}
-                </ul>
+                <table class="table table-bordered text-center">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Enseignant</th>
+                            <th>Matières enseignées</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for enseignant in resultats.enseignants %}
+                            <tr>
+                                <td><strong>{{ enseignant.prenom }} {{ enseignant.nom }}</strong></td>
+                                <td>
+                                    {% if enseignant.matieres.all %}
+                                        <ul class="list-unstyled">
+                                            {% for matiere in enseignant.matieres.all %}
+                                                | {{ matiere.nom }} |
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <span class="text-danger">Aucune matière</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     {% endif %}
+
+
 
    {% if type_recherche == 'liste_classes_etablissement' and resultats.classes_etablissement %}
     <div class="card shadow mb-4">
