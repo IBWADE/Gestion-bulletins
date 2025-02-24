@@ -1699,6 +1699,8 @@ def impression_bulletins_classe1(request, classe_id, semestre):
         "Science Physique", "Anglais", "Espagnol", "Histoire/Géographie", "Education civique",
         "Sc. De Vie et de la terre", "Economie familiale", "Ed. Physique et Sportive"
     ]
+    # ✅ Initialisation d'annee_scolaire pour éviter l'erreur si eleves est vide
+    annee_scolaire = "Non définie"
     
     for eleve in eleves:
         annee_scolaire = eleve.classe.etablissement.annee_scolaire if eleve.classe and eleve.classe.etablissement else "Non définie"
@@ -1814,6 +1816,8 @@ def impression_bulletins_classe2(request, classe_id, semestre):
         "Science Physique", "Anglais", "Espagnol", "Histoire/Géographie", "Education civique",
         "Sc. De Vie et de la terre", "Economie familiale", "Ed. Physique et Sportive"
     ]
+    # ✅ Initialisation d'annee_scolaire pour éviter l'erreur si eleves est vide
+    annee_scolaire = "Non définie"
 
     for eleve in eleves:
         annee_scolaire = eleve.classe.etablissement.annee_scolaire if eleve.classe and eleve.classe.etablissement else "Non définie"
