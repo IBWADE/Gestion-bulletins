@@ -1,8 +1,41 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Connexion{% endblock %}
 
 {% block content %}
+<style>
+        body {
+        background: url("{% static 'images/imagecon.jpg' %}") no-repeat center center fixed;
+        background-size: cover;
+    }
+
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+
+    .login-box {
+        background: rgba(255, 255, 255, 0.9); /* Fond blanc semi-transparent */
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+        max-width: 400px;
+        width: 100%;
+        text-align: center;
+    }
+
+    .login-box .form-control {
+        border-radius: 5px;
+    }
+
+    .login-box .btn {
+        width: 100%;
+        font-size: 18px;
+    }
+</style>
 <div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
     <div class="card shadow-lg border-0 p-4 text-center" style="max-width: 400px; width: 100%;">
         <div class="card-header bg-primary text-white">

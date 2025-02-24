@@ -837,7 +837,7 @@ def saisie_eleve(request):
 
 
 @login_required
-@user_passes_test(is_admin_or_enseignant, login_url='login')
+@user_passes_test(is_admin, login_url='login')
 def liste_eleves(request):
     query = request.GET.get('q', '')
 
@@ -862,7 +862,7 @@ def liste_eleves(request):
 
 
 @login_required
-@user_passes_test(is_admin_or_enseignant, login_url='login')
+@user_passes_test(is_admin, login_url='login')
 def liste_eleves_classe(request, classe_id):
     classe = get_object_or_404(Classe, id=classe_id)
     eleves = Eleve.objects.filter(classe=classe)
@@ -942,7 +942,7 @@ def liste_etablissements(request):
 
 
 @login_required
-@user_passes_test(is_admin_or_enseignant, login_url='login')
+@user_passes_test(is_admin, login_url='login')
 def liste_classes(request):
     query = request.GET.get('q', '')
 
@@ -1126,8 +1126,8 @@ def details_notes_eleve_enseignant(request, eleve_id, semestre):
     return render(request, 'bulletins/details_notes_eleve_enseignant.html', context)
 
 
-
 @login_required
+@user_passes_test(is_enseignant, login_url='login')
 def saisie_note_enseignant(request, eleve_id, semestre):
     eleve = get_object_or_404(Eleve, id=eleve_id)
     annee_scolaire = eleve.classe.etablissement.annee_scolaire if eleve.classe and eleve.classe.etablissement else "Non définie"
