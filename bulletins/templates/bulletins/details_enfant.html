@@ -67,65 +67,71 @@
     <div class="card-body">
         <canvas id="moyennesChart"></canvas>
         <script>
-            document.addEventListener("DOMContentLoaded", function () {
-                var ctx = document.getElementById('moyennesChart');
+    document.addEventListener("DOMContentLoaded", function () {
+        var ctx = document.getElementById('moyennesChart');
 
-                if (ctx) {
-                    var labels = ["Semestre 1", "Semestre 2", "Annuel"];
-                    var moyennes = [
-                        {{ moyenne_generale_s1|floatformat:"2" }},
-                        {{ moyenne_generale_s2|floatformat:"2" }},
-                        {{ moyenne_annuelle|floatformat:"2" }}
-                    ];
+        if (!ctx) {
+            console.error("⚠️ Erreur : <canvas> id='moyennesChart' introuvable !");
+            return;
+        }
+        ctx = ctx.getContext('2d');
 
-                    new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: 'Moyennes',
-                                data: moyennes,
-                                backgroundColor: [
-                                    'rgba(255, 99, 132, 0.6)',
-                                    'rgba(54, 162, 235, 0.6)',
-                                    'rgba(75, 192, 192, 0.6)'
-                                ],
-                                borderColor: [
-                                    'rgba(255, 99, 132, 1)',
-                                    'rgba(54, 162, 235, 1)',
-                                    'rgba(75, 192, 192, 1)'
-                                ],
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    max: 20
-                                }
-                            },
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function (tooltipItem) {
-                                            return tooltipItem.raw + '/20';
-                                        }
-                                    }
-                                }
+        // Récupération et correction des moyennes (remplacement "," par ".")
+        var moyennes = [
+            "{{ moyenne_generale_s1|floatformat:'2' }}",
+            "{{ moyenne_generale_s2|floatformat:'2' }}",
+            "{{ moyenne_annuelle|floatformat:'2' }}"
+        ].map(val => parseFloat(val.replace(",", ".")));
+
+        // Vérification des données
+        if (moyennes.some(isNaN)) {
+            console.error("⚠️ Erreur : Les valeurs des moyennes ne sont pas valides.");
+            return;
+        }
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ["Semestre 1", "Semestre 2", "Annuel"],
+                datasets: [{
+                    label: 'Moyennes',
+                    data: moyennes,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(75, 192, 192, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 20
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (tooltipItem) {
+                                return tooltipItem.raw.toFixed(2) + ' / 20';
                             }
                         }
-                    });
-                } else {
-                    console.error("Élément #moyennesChart introuvable.");
+                    }
                 }
-            });
-        </script>
+            }
+        });
+    });
+</script>
     </div>
 </div>
 

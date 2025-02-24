@@ -131,69 +131,81 @@
 </div>
 
 <script>
-    var ctx = document.getElementById('moyennesClassesChart').getContext('2d');
-    var chart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: [{% for classe in moyennes_classes %}"{{ classe.nom|default:'Non défini' }}",{% endfor %}],
-            datasets: [{
-                label: 'Moyennes Générales',
-                data: [{% for classe in moyennes_classes %}{{ classe.moyenne_generale|floatformat:"2" }},{% endfor %}],
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.6)',
-                    'rgba(54, 162, 235, 0.6)',
-                    'rgba(255, 206, 86, 0.6)',
-                    'rgba(75, 192, 192, 0.6)',
-                    'rgba(153, 102, 255, 0.6)',
-                    'rgba(255, 159, 64, 0.6)'
-                ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 159, 64, 1)'
-                ],
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(tooltipItem) {
-                            return ' Moyenne: ' + tooltipItem.raw.toFixed(2);
-                        }
-                    }
-                }
+    document.addEventListener("DOMContentLoaded", function () {
+        var ctx = document.getElementById('moyennesClassesChart');
+
+        if (!ctx) {
+            console.error("⚠️ Erreur : <canvas> id='moyennesClassesChart' introuvable !");
+            return;
+        }
+        ctx = ctx.getContext('2d');
+
+        // Récupération des noms des classes
+        var classes = [{% for classe in moyennes_classes %}"{{ classe.nom|default:'Non défini' }}",{% endfor %}];
+
+        // Récupération et correction des moyennes (remplacement "," par ".")
+        var moyennes = [{% for classe in moyennes_classes %}"{{ classe.moyenne_generale|floatformat:'2' }}",{% endfor %}]
+            .map(val => parseFloat(val.replace(",", ".")));
+
+        if (classes.length !== moyennes.length || moyennes.some(isNaN)) {
+            console.error("⚠️ Erreur : Les données du graphique sont invalides.");
+            return;
+        }
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: classes,
+                datasets: [{
+                    label: 'Moyennes Générales',
+                    data: moyennes,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(153, 102, 255, 0.6)',
+                        'rgba(255, 159, 64, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 2
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 20,
-                    ticks: {
-                        font: {
-                            size: 14
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return ' Moyenne: ' + tooltipItem.raw.toFixed(2);
+                            }
                         }
                     }
                 },
-                x: {
-                    ticks: {
-                        font: {
-                            size: 14
-                        }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 20,
+                        ticks: { font: { size: 14 } }
+                    },
+                    x: {
+                        ticks: { font: { size: 14 } }
                     }
                 }
             }
-        }
+        });
     });
 </script>
+
 
 
    <!-- Graphique des Premiers de Chaque Classe -->         
@@ -210,11 +222,12 @@
             <div class="col-md-6">
                 <ul class="list-group list-group-flush">
                     {% for premier in premiers_par_classe %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span class="fw-bold">{{ premier.nom }} ({{ premier.classe }})</span>
-                        <span class="badge bg-success fs-5">{{ premier.moyenne_annuelle|floatformat:"2" }}</span>
-                    </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span class="fw-bold">{{ premier.premier.nom }} ({{ premier.classe }})</span>
+                            <span class="badge bg-success fs-5">{{ premier.moyenne_annuelle|floatformat:"2" }}</span>
+                        </li>
                     {% endfor %}
+
                 </ul>
             </div>
         </div>
@@ -223,32 +236,48 @@
 </div>
 
 <script>
-    var ctx = document.getElementById('premiersClasseChart').getContext('2d');
-    var chart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: [{% for premier in premiers_par_classe %}"{{ premier.classe }}",{% endfor %}],
-            datasets: [{
-                data: [{% for premier in premiers_par_classe %}{{ premier.moyenne_annuelle|floatformat:"2" }},{% endfor %}],
-                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4CAF50', '#8E44AD', '#E67E22'],
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: {
-                        font: {
-                            size: 14
-                        }
+    document.addEventListener("DOMContentLoaded", function () {
+        var ctx = document.getElementById('premiersClasseChart');
+
+        if (!ctx) {
+            console.error("⚠️ Erreur : <canvas> id='premiersClasseChart' introuvable !");
+            return;
+        }
+        ctx = ctx.getContext('2d');
+
+        // Récupération des données avec conversion correcte des décimales
+        var classes = [{% for premier in premiers_par_classe %}"{{ premier.classe|default:'Classe inconnue' }}",{% endfor %}];
+        var moyennes = [{% for premier in premiers_par_classe %}"{{ premier.moyenne_annuelle|floatformat:'2' }}",{% endfor %}]
+            .map(val => parseFloat(val.replace(",", ".")));  // Remplacement de la virgule par un point
+
+        if (classes.length !== moyennes.length || moyennes.some(isNaN)) {
+            console.error("⚠️ Erreur : Les données du graphique sont invalides.");
+            return;
+        }
+
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: classes,
+                datasets: [{
+                    data: moyennes,
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4CAF50', '#8E44AD', '#E67E22'],
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { size: 14 } }
                     }
                 }
             }
-        }
+        });
     });
 </script>
+
 
 
 <!-- Graphique des Trois Meilleurs Élèves -->
@@ -278,34 +307,76 @@
 </div>
 
 <script>
-    var ctx = document.getElementById('meilleursElevesChart').getContext('2d');
-    var chart = new Chart(ctx, {
-        type: 'radar',
-        data: {
-            labels: [{% for eleve in meilleurs_eleves_etablissement %}"{{ eleve.prenom }} {{ eleve.nom }}",{% endfor %}],
-            datasets: [{
-                label: 'Moyennes Annuelles',
-                data: [{% for eleve in meilleurs_eleves_etablissement %}{{ eleve.moyenne_annuelle|floatformat:"2" }},{% endfor %}],
-                backgroundColor: 'rgba(255, 193, 7, 0.2)',
-                borderColor: 'rgba(255, 193, 7, 1)',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            elements: {
-                line: {
-                    borderWidth: 3
-                }
+    document.addEventListener("DOMContentLoaded", function () {
+        var ctx = document.getElementById('meilleursElevesChart');
+
+        if (!ctx) {
+            console.error("⚠️ Erreur : <canvas> id='meilleursElevesChart' introuvable !");
+            return;
+        }
+        ctx = ctx.getContext('2d');
+
+        // Récupération et correction des labels (prénom + nom des élèves)
+        var labels = [
+            {% for eleve in meilleurs_eleves_etablissement %}
+                "{{ eleve.prenom }} {{ eleve.nom }}",
+            {% endfor %}
+        ];
+
+        // Récupération et correction des moyennes (remplacement "," par ".")
+        var moyennesAnnuelles = [
+            {% for eleve in meilleurs_eleves_etablissement %}
+                "{{ eleve.moyenne_annuelle|floatformat:'2' }}",
+            {% endfor %}
+        ].map(val => parseFloat(val.replace(",", ".")));
+
+        // Vérification des données
+        if (labels.length === 0 || moyennesAnnuelles.some(isNaN)) {
+            console.error("⚠️ Erreur : Données invalides ou manquantes pour le graphique.");
+            return;
+        }
+
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Moyennes Annuelles',
+                    data: moyennesAnnuelles,
+                    backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                    borderColor: 'rgba(255, 193, 7, 1)',
+                    borderWidth: 2
+                }]
             },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top'
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                elements: {
+                    line: {
+                        borderWidth: 3
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (tooltipItem) {
+                                return tooltipItem.dataset.label + ': ' + tooltipItem.raw.toFixed(2) + ' / 20';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 20
+                    }
                 }
             }
-        }
+        });
     });
 </script>
 
@@ -337,34 +408,76 @@
 </div>
 
 <script>
-    var ctx = document.getElementById('mauvaisElevesChart').getContext('2d');
-    var chart = new Chart(ctx, {
-        type: 'radar',
-        data: {
-            labels: [{% for eleve in mauvais_eleves_etablissement %}"{{ eleve.prenom }} {{ eleve.nom }}",{% endfor %}],
-            datasets: [{
-                label: 'Moyennes Annuelles',
-                data: [{% for eleve in mauvais_eleves_etablissement %}{{ eleve.moyenne_annuelle|floatformat:"2" }},{% endfor %}],
-                backgroundColor: 'rgba(255, 99, 132, 0.2)',  /* Couleur rouge clair */
-                borderColor: 'rgba(255, 99, 132, 1)', /* Rouge foncé */
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            elements: {
-                line: {
-                    borderWidth: 3
-                }
+    document.addEventListener("DOMContentLoaded", function () {
+        var ctx = document.getElementById('mauvaisElevesChart');
+
+        if (!ctx) {
+            console.error("⚠️ Erreur : <canvas> id='mauvaisElevesChart' introuvable !");
+            return;
+        }
+        ctx = ctx.getContext('2d');
+
+        // Récupération et correction des labels (prénom + nom des élèves)
+        var labels = [
+            {% for eleve in mauvais_eleves_etablissement %}
+                "{{ eleve.prenom }} {{ eleve.nom }}",
+            {% endfor %}
+        ];
+
+        // Récupération et correction des moyennes (remplacement "," par ".")
+        var moyennesAnnuelles = [
+            {% for eleve in mauvais_eleves_etablissement %}
+                "{{ eleve.moyenne_annuelle|floatformat:'2' }}",
+            {% endfor %}
+        ].map(val => parseFloat(val.replace(",", ".")));
+
+        // Vérification des données
+        if (labels.length === 0 || moyennesAnnuelles.some(isNaN)) {
+            console.error("⚠️ Erreur : Données invalides ou manquantes pour le graphique.");
+            return;
+        }
+
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Moyennes Annuelles',
+                    data: moyennesAnnuelles,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',  /* Rouge clair */
+                    borderColor: 'rgba(255, 99, 132, 1)', /* Rouge foncé */
+                    borderWidth: 2
+                }]
             },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top'
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                elements: {
+                    line: {
+                        borderWidth: 3
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (tooltipItem) {
+                                return tooltipItem.dataset.label + ': ' + tooltipItem.raw.toFixed(2) + ' / 20';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 20
+                    }
                 }
             }
-        }
+        });
     });
 </script>
 
@@ -400,55 +513,67 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        var ctx = document.getElementById('tauxReussiteChart').getContext('2d');
+        var ctx = document.getElementById('tauxReussiteChart');
 
-        // Définition des variables en JavaScript avec une vérification Django
-        var tauxReussite = parseFloat("{{ taux_reussite|default:0 }}");
-        var tauxEchec = parseFloat("{{ taux_echec|default:0 }}");
+        if (!ctx) {
+            console.error("⚠️ Erreur : <canvas> id='tauxReussiteChart' introuvable !");
+            return;
+        }
+        ctx = ctx.getContext('2d');
 
-        // Vérification que les valeurs sont bien valides
-        if (!isNaN(tauxReussite) && !isNaN(tauxEchec)) {
-            var chart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Réussite', 'Échec'],
-                    datasets: [{
-                        data: [tauxReussite, tauxEchec],
-                        backgroundColor: [
-                            'rgba(75, 192, 192, 0.8)', // Vert pour réussite
-                            'rgba(255, 99, 132, 0.8)'  // Rouge pour échec
-                        ],
-                        borderColor: [
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(255, 99, 132, 1)'
-                        ],
-                        borderWidth: 2,
-                        hoverOffset: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                font: {
-                                    size: 14
-                                }
+        // Récupération des taux et correction des formats (remplacement des virgules par des points)
+        var tauxReussite = parseFloat("{{ taux_reussite|default:0 }}".replace(",", "."));
+        var tauxEchec = parseFloat("{{ taux_echec|default:0 }}".replace(",", "."));
+
+        // Vérification et correction des valeurs négatives ou trop grandes
+        if (isNaN(tauxReussite) || isNaN(tauxEchec) || tauxReussite < 0 || tauxEchec < 0 || tauxReussite + tauxEchec > 100) {
+            console.error("⚠️ Erreur : valeurs de taux_reussite et taux_echec non valides !");
+            return;
+        }
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Réussite', 'Échec'],
+                datasets: [{
+                    data: [tauxReussite, tauxEchec],
+                    backgroundColor: [
+                        'rgba(75, 192, 192, 0.8)', // Vert pour réussite
+                        'rgba(255, 99, 132, 0.8)'  // Rouge pour échec
+                    ],
+                    borderColor: [
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ],
+                    borderWidth: 2,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (tooltipItem) {
+                                return tooltipItem.label + ': ' + tooltipItem.raw.toFixed(2) + '%';
                             }
                         }
                     }
                 }
-            });
-
-            // Forcer la mise à jour du graphique après création
-            chart.update();
-        } else {
-            console.error("Les valeurs taux_reussite et taux_echec ne sont pas valides.");
-        }
+            }
+        });
     });
 </script>
+
 
 
 

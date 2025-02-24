@@ -97,95 +97,102 @@
         <div class="card-body">
             <canvas id="enfantsComparisonChart"></canvas>
             <script>
-                    document.addEventListener("DOMContentLoaded", function () {
-                        var ctx = document.getElementById('enfantsComparisonChart');
+    document.addEventListener("DOMContentLoaded", function () {
+        var ctx = document.getElementById('enfantsComparisonChart');
 
-                        if (ctx) {  // Vérifier que l'élément existe
-                            var labels = [
-                                {% for enfant_data in enfants_data %}
-                                    "{{ enfant_data.enfant.prenom }} {{ enfant_data.enfant.nom }}",
-                                {% endfor %}
-                            ];
+        if (!ctx) {
+            console.error("⚠️ Erreur : <canvas> id='enfantsComparisonChart' introuvable !");
+            return;
+        }
+        ctx = ctx.getContext('2d');
 
-                            var moyennesS1 = [
-                                {% for enfant_data in enfants_data %}
-                                    {{ enfant_data.moyenne_s1|floatformat:"2" }},
-                                {% endfor %}
-                            ];
+        // Correction de l'affichage des labels (prénoms et noms des enfants)
+        var labels = [
+            {% for enfant_data in enfants_data %}
+                "{{ enfant_data.enfant.prenom }} {{ enfant_data.enfant.nom }}",
+            {% endfor %}
+        ];
 
-                            var moyennesS2 = [
-                                {% for enfant_data in enfants_data %}
-                                    {{ enfant_data.moyenne_s2|floatformat:"2" }},
-                                {% endfor %}
-                            ];
+        // Récupération et correction des moyennes (remplacement "," par ".")
+        var moyennesS1 = [
+            {% for enfant_data in enfants_data %}
+                "{{ enfant_data.moyenne_s1|floatformat:'2' }}",
+            {% endfor %}
+        ].map(val => parseFloat(val.replace(",", ".")));
 
-                            var moyennesAnn = [
-                                {% for enfant_data in enfants_data %}
-                                    {{ enfant_data.moyenne_annuelle|floatformat:"2" }},
-                                {% endfor %}
-                            ];
+        var moyennesS2 = [
+            {% for enfant_data in enfants_data %}
+                "{{ enfant_data.moyenne_s2|floatformat:'2' }}",
+            {% endfor %}
+        ].map(val => parseFloat(val.replace(",", ".")));
 
-                            if (labels.length > 0) {
-                                new Chart(ctx, {
-                                    type: 'bar',
-                                    data: {
-                                        labels: labels,
-                                        datasets: [
-                                            {
-                                                label: 'Moyenne S1',
-                                                data: moyennesS1,
-                                                backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                                                borderColor: 'rgba(255, 99, 132, 1)',
-                                                borderWidth: 1
-                                            },
-                                            {
-                                                label: 'Moyenne S2',
-                                                data: moyennesS2,
-                                                backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                                                borderColor: 'rgba(54, 162, 235, 1)',
-                                                borderWidth: 1
-                                            },
-                                            {
-                                                label: 'Moyenne Annuelle',
-                                                data: moyennesAnn,
-                                                backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                                                borderColor: 'rgba(75, 192, 192, 1)',
-                                                borderWidth: 1
-                                            }
-                                        ]
-                                    },
-                                    options: {
-                                        responsive: true,
-                                        maintainAspectRatio: false,
-                                        scales: {
-                                            y: {
-                                                beginAtZero: true,
-                                                max: 20
-                                            }
-                                        },
-                                        plugins: {
-                                            legend: {
-                                                display: true,
-                                                position: 'top'
-                                            },
-                                            tooltip: {
-                                                callbacks: {
-                                                    label: function (tooltipItem) {
-                                                        return tooltipItem.dataset.label + ': ' + tooltipItem.raw + '/20';
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                });
-                            } else {
-                                console.warn("Aucune donnée disponible pour le graphique.");
+        var moyennesAnn = [
+            {% for enfant_data in enfants_data %}
+                "{{ enfant_data.moyenne_annuelle|floatformat:'2' }}",
+            {% endfor %}
+        ].map(val => parseFloat(val.replace(",", ".")));
+
+        // Vérification des données
+        if (labels.length === 0 || moyennesS1.some(isNaN) || moyennesS2.some(isNaN) || moyennesAnn.some(isNaN)) {
+            console.error("⚠️ Erreur : Données invalides ou manquantes pour le graphique.");
+            return;
+        }
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Moyenne S1',
+                        data: moyennesS1,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Moyenne S2',
+                        data: moyennesS2,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Moyenne Annuelle',
+                        data: moyennesAnn,
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 20
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (tooltipItem) {
+                                return tooltipItem.dataset.label + ': ' + tooltipItem.raw.toFixed(2) + ' / 20';
                             }
-                        } else {
-                            console.error("Élément #enfantsComparisonChart introuvable.");
                         }
-                    });
-                </script>
+                    }
+                }
+            }
+        });
+    });
+</script>
+
 
 
         </div>
