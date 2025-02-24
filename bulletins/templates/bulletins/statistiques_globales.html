@@ -497,14 +497,19 @@
             <div class="col-md-6">
                 {% if taux_reussite > 0 %}
                     {% if taux_reussite >= 50 %}
-                        <h1 class="display-4 text-success fw-bold">{{ taux_reussite }}%</h1>
+                        <h1 class="display-4 text-success fw-bold">{{ taux_reussite|floatformat:2 }}%</h1>
+
                     {% elif taux_reussite >= 30 %}
-                        <h1 class="display-4 text-warning fw-bold">{{ taux_reussite }}%</h1>
+                        <h1 class="display-4 text-success fw-bold">{{ taux_reussite|floatformat:2 }}%</h1>
+
                     {% else %}
-                        <h1 class="display-4 text-danger fw-bold">{{ taux_reussite }}%</h1>
+                        <h1 class="display-4 text-success fw-bold">{{ taux_reussite|floatformat:2 }}%</h1>
+
                     {% endif %}
                 {% endif %}
                 <p class="text-muted">des élèves ont réussi cette année.</p>
+                <h1 class="display-4 text-danger fw-bold">{{ taux_echec|floatformat:2 }}%</h1>
+                <p class="text-muted">des élèves n'ont pas réussi cette année.</p>
             </div>
         </div>
     </div>
@@ -521,19 +526,15 @@
         }
         ctx = ctx.getContext('2d');
 
-        // Récupération des taux et correction des formats (remplacement des virgules par des points)
-        var tauxReussite = parseFloat("{{ taux_reussite|default:0 }}".replace(",", "."));
-        var tauxEchec = parseFloat("{{ taux_echec|default:0 }}".replace(",", "."));
+        // Récupération des taux et forçage en nombres flottants
+        var tauxReussite = parseFloat("{{ taux_reussite|default:0|floatformat:2 }}");
+        var tauxEchec = parseFloat("{{ taux_echec|default:0|floatformat:2 }}");
 
-        // Vérification des valeurs (évite les nombres négatifs et incohérents)
-        if (isNaN(tauxReussite) || isNaN(tauxEchec) || tauxReussite < 0 || tauxEchec < 0 || tauxReussite + tauxEchec > 100) {
-            console.error("⚠️ Erreur : valeurs de taux_reussite et taux_echec non valides !");
+        // Vérification des valeurs (évite les erreurs NaN)
+        if (isNaN(tauxReussite) || isNaN(tauxEchec)) {
+            console.error("⚠️ Erreur : valeurs taux_reussite ou taux_echec invalides !");
             return;
         }
-
-        // Limiter à 2 décimales
-        tauxReussite = parseFloat(tauxReussite.toFixed(2));
-        tauxEchec = parseFloat(tauxEchec.toFixed(2));
 
         new Chart(ctx, {
             type: 'doughnut',
