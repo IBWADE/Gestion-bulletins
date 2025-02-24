@@ -525,11 +525,15 @@
         var tauxReussite = parseFloat("{{ taux_reussite|default:0 }}".replace(",", "."));
         var tauxEchec = parseFloat("{{ taux_echec|default:0 }}".replace(",", "."));
 
-        // Vérification et correction des valeurs négatives ou trop grandes
+        // Vérification des valeurs (évite les nombres négatifs et incohérents)
         if (isNaN(tauxReussite) || isNaN(tauxEchec) || tauxReussite < 0 || tauxEchec < 0 || tauxReussite + tauxEchec > 100) {
             console.error("⚠️ Erreur : valeurs de taux_reussite et taux_echec non valides !");
             return;
         }
+
+        // Limiter à 2 décimales
+        tauxReussite = parseFloat(tauxReussite.toFixed(2));
+        tauxEchec = parseFloat(tauxEchec.toFixed(2));
 
         new Chart(ctx, {
             type: 'doughnut',
@@ -573,6 +577,7 @@
         });
     });
 </script>
+
 
 
 
