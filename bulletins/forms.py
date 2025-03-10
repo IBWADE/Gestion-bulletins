@@ -114,9 +114,19 @@ class AbsenceForm(forms.ModelForm):
 
 
 class EleveForm(forms.ModelForm):
+    SEXE_CHOICES = [
+        ('', ''),
+        ('M', 'Masculin'),
+        ('F', 'Féminin'),
+    ]
+
+    sexe = forms.ChoiceField(
+        choices=SEXE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
     class Meta:
         model = Eleve
-        fields = ['nom', 'prenom', 'classe', 'parent', 'date_naissance', 'lieu_naissance', 'matricule']
+        fields = ['nom', 'prenom', 'sexe', 'classe', 'parent', 'date_naissance', 'lieu_naissance', 'matricule']
         
         widgets = {
             'nom': forms.TextInput(attrs={'class': 'form-control'}),

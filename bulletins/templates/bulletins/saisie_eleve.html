@@ -56,6 +56,18 @@
                         </div>
                         {% endif %}
                     </div>
+                    <!-- Champ Sex -->
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {{ form.sexe }}
+                            <label for="{{ form.sexe.id_for_label }}">Sexe</label>
+                        </div>
+                        {% if form.sexe.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.sexe.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
 
                     <!-- Champ Matricule -->
                     <div class="col-md-6">
@@ -110,7 +122,7 @@
                     </div>
 
                     <!-- Champ Parent -->
-                    <div class="col-12">
+                    <div class="col-md-6">
                         <div class="form-floating">
                             {{ form.parent }}
                             <label for="{{ form.parent.id_for_label }}">Parent</label>
