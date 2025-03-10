@@ -23,8 +23,3 @@ try:
 except Exception as e:
     print(f"Erreur lors de la migration : {e}")
 
-# Création automatique du superutilisateur (exécute une seule fois)
-User = get_user_model()
-if not User.objects.filter(username="admin").exists():
-    User.objects.create_superuser("admin", "wibrahima@gmail.com", "P@lfren1er")
-    print("Superutilisateur créé avec succès !")    
