@@ -17,11 +17,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gestion_bulletins.settings')
 
 application = get_wsgi_application()
 
-# Exécuter les migrations automatiquement au démarrage
-try:
-    call_command("migrate")
-except Exception as e:
-    print(f"Erreur lors de la migration : {e}")
+
 
 # Création automatique du superutilisateur (exécute une seule fois)
 User = get_user_model()

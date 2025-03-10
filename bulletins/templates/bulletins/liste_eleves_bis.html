@@ -17,11 +17,9 @@
         <div class="card-header bg-success text-white">
             <div class="d-flex justify-content-between align-items-center">
                 <h2 class="mb-0">
-                    <i class="fas fa-user-graduate me-2"></i>Liste des élèves
+                    <i class="fas fa-user-graduate me-2"></i>Liste des élèves avec les notes restaurees
                 </h2>
-                <a href="{% url 'saisie_eleve' %}" class="btn btn-light">
-                    <i class="fas fa-plus-circle me-2"></i>Ajouter un élève
-                </a>
+                
             </div>
         </div>
 
@@ -53,51 +51,25 @@
                             <td class="text-end">
                                 <div class="btn-group" role="group">
                                      
-                                     <!-- Bouton Saisie semestre 1-->
-                                    <a href="{% url 'saisie_notes_eleve' eleve.id %}" 
-                                       class="btn btn-outline-success btn-sm"
-                                       data-bs-toggle="tooltip"
-                                       title="Saisir notes semestre 1">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                                     
                                     <!-- Bouton voir semestre 1-->
-                                    <a href="{% url 'details_notes_eleve' eleve.id %}" 
+                                    <a href="{% url 'details_notes_eleve_rest' eleve.id 1 annee_scolaire %}" 
                                        class="btn btn-outline-info btn-sm"
                                        data-bs-toggle="tooltip" 
                                        title="Voir notes semestre 1">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                      <!-- Bouton Saisie semestre 2-->
-                                    <a href="{% url 'saisie_notes_eleve' eleve.id %}" 
-                                       class="btn btn-outline-success btn-sm"
-                                       data-bs-toggle="tooltip"
-                                       title="Saisir notes semestre 2">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                                     
                                     <!-- Bouton voir semestre 2-->
-                                    <a href="{% url 'details_notes_eleve' eleve.id %}" 
+                                    <a href="{% url 'details_notes_eleve_rest' eleve.id 2 annee_scolaire %}" 
                                        class="btn btn-outline-info btn-sm"
                                        data-bs-toggle="tooltip" 
                                        title="Voir notes semestre 2">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <!-- Bouton Modifier -->
-                                    <a href="{% url 'modifier_eleve' eleve.id %}" 
-                                        class="btn btn-sm btn-primary me-2" 
-                                        data-bs-toggle="tooltip" 
-                                        title="Modifier cet eleve">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                                    
 
-                                    <!-- Bouton Supprimer -->
-                                    <form action="{% url 'supprimer_eleve' eleve.id %}" method="POST" style="display: inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet eleve ?')" 
-                                                data-bs-toggle="tooltip" 
-                                                title="Supprimer cet eleve">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
+                                    
                                     <!-- Bouton imprimer -->
                                     <a href="{% url 'bulletin_semestre_1' eleve.id %}" 
                                        class="btn btn-sm btn-outline-primary"

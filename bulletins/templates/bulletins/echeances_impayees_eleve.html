@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Échéances Impayées - {{ eleve.prenom }} {{ eleve.nom }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-danger text-white text-center">
+            <h3><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Échéances Impayées</h3>
+            <h5>{{ eleve.prenom }} {{ eleve.nom }} - {{ eleve.classe.nom }}</h5>
+            <p class="fs-5"><strong>Solde restant :</strong> {{ solde_restant }} FCFA</p>
+        </div>
+        <div class="card-body">
+            {% if echeances_impayees %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="bg-dark text-white">
+                            <tr>
+                                <th>Date d'échéance</th>
+                                <th>Type de frais</th>
+                                <th>Montant dû</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for echeance in echeances_impayees %}
+                            <tr>
+                                <td class="text-nowrap">
+                                    <i class="fas fa-calendar-alt" aria-hidden="true"></i> 
+                                    {{ echeance.date_echeance|date:"d/m/Y" }}
+                                </td>
+                                <td>{{ echeance.frais.get_type_frais_display }}</td>
+                                <td class="text-nowrap">
+                                    <span class="badge bg-danger fs-6">
+                                        <i class="fas fa-money-bill-wave" aria-hidden="true"></i> 
+                                        {{ echeance.montant_du }} FCFA
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'paiement_echeance' echeance.id %}" class="btn btn-success btn-sm" data-bs-toggle="tooltip" title="Effectuer le paiement">
+                                        <i class="fas fa-credit-card" aria-hidden="true"></i> Payer
+                                    </a>
+                                    <a href="{% url 'facture_echeance' echeance.id %}" class="btn btn-primary btn-sm" target="_blank" rel="noopener noreferrer" data-bs-toggle="tooltip" title="Imprimer la facture">
+                                        <i class="fas fa-print" aria-hidden="true"></i> Imprimer
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-center text-muted fs-5">
+                    <i class="fas fa-check-circle text-success" aria-hidden="true"></i> Aucune échéance impayée.
+                </p>
+            {% endif %}
+        </div>
+        <div class="card-footer text-center">
+            <a href="{% url 'liste_eleves_par_classe' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i> Retour à la liste des élèves
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Activer les tooltips Bootstrap -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        let tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        let tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+
+{% endblock %}

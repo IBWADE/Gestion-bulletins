@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Liste des Paiements{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Liste des Paiements</h1>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Élève</th>
+                <th>Frais</th>
+                <th>Montant Payé</th>
+                <th>Date de Paiement</th>
+                <th>Mode de Paiement</th>
+                <th>Statut</th>
+                <th>Référence</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for paiement in paiement_list %}
+            <tr>
+                <td>{{ paiement.eleve }}</td>
+                <td>{{ paiement.frais }}</td>
+                <td>{{ paiement.montant_paye }} FCFA</td>
+                <td>{{ paiement.date_paiement }}</td>
+                <td>{{ paiement.get_mode_paiement_display }}</td>
+                <td>{{ paiement.get_statut_display }}</td>
+                <td>{{ paiement.reference }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{% url 'enregistrer_paiement' %}" class="btn btn-primary">Enregistrer un Paiement</a>
+</div>
+{% endblock %}

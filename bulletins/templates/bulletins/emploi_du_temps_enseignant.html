@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Emploi du temps - {{ enseignant.nom }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="text-primary"><i class="fas fa-chalkboard-teacher me-2"></i> Emploi du temps - {{ enseignant.prenom }} {{ enseignant.nom }}</h2>
+        <button onclick="history.back()" class="btn btn-dark">
+                    <i class="fas fa-arrow-left"></i> Retour
+       </button> 
+    </div>
+    
+
+    <div class="card shadow-lg border-0 rounded-3">
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Jour</th>
+                        <th>Heure</th>
+                        <th>Classe</th>
+                        <th>Matière</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for creneau in emploi_du_temps %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-info text-white">{{ creneau.jour }}</span>
+                        </td>
+                        <td class="fw-bold">{{ creneau.heure_debut|time:"H:i" }} - {{ creneau.heure_fin|time:"H:i" }}</td>
+                        <td>{{ creneau.classe.nom }}</td>
+                        <td>{{ creneau.matiere.nom }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Aucun créneau défini</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Liste des Enseignants{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="text-primary"><i class="fas fa-chalkboard-teacher me-2"></i> Liste des Enseignants</h2>
+        
+    </div>
+
+    <div class="card shadow-lg border-0 rounded-3">
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nom de l'Enseignant</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enseignant in enseignants %}
+                    <tr>
+                        <td class="align-middle">{{ enseignant.prenom }} {{ enseignant.nom }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'emploi_du_temps_enseignant' enseignant.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-calendar-alt"></i> Emploi du temps
+                            </a>
+                            <a href="{% url 'etat_impression_enseignant' enseignant.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-calendar-alt"></i> Etat
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" class="text-center text-muted">Aucun enseignant disponible</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

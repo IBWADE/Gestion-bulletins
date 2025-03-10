@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: gestion-bulletins
+    env: python
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py migrate  # Appliquer les migrations ici
+      python manage.py collectstatic --noinput  # Collecter les fichiers statiques
+    startCommand: gunicorn gestion_bulletins.wsgi:application

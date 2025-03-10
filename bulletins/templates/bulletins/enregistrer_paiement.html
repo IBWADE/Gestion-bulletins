@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Enregistrer un Paiement{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Enregistrer un Paiement</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            {{ form.eleve.label_tag }}
+            {{ form.eleve }}
+        </div>
+        <div class="form-group">
+            {{ form.frais.label_tag }}
+            {{ form.frais }}
+        </div>
+        <div class="form-group">
+            {{ form.montant_paye.label_tag }}
+            {{ form.montant_paye }}
+        </div>
+        <div class="form-group">
+            {{ form.date_paiement.label_tag }}
+            {{ form.date_paiement }}
+        </div>
+        <div class="form-group">
+            {{ form.mode_paiement.label_tag }}
+            {{ form.mode_paiement }}
+        </div>
+        <div class="form-group">
+            {{ form.statut.label_tag }}
+            {{ form.statut }}
+        </div>
+        <div class="form-group">
+            {{ form.reference.label_tag }}
+            {{ form.reference }}
+        </div>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        <a href="{% url 'liste_paiements' %}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>
+{% endblock %}

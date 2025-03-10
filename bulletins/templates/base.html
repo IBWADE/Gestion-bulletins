@@ -11,6 +11,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
 
     <!-- Styles globaux -->
     <style>
@@ -156,15 +158,58 @@
         
         <li><a class="dropdown-item" href="{% url 'liste_enseignants' %}">
             <i class="fas fa-chalkboard-teacher me-2"></i>Enseignants
-        </a></li>                            
-       
+        </a></li>                    
+               
         
-        <li><a class="dropdown-item" href="{% url 'liste_archives' %}">
-                <i class="fas fa-archive fa-spin"></i>Liste Archive
-            </a>
-        </li>
     </ul>    
 </li>
+
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="fraisDropdown" role="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            <i class="fas fa-coins me-2"></i>Frais
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="fraisDropdown"> 
+             <li><a class="dropdown-item" href="{% url 'liste_frais' %}">
+                <i class="fas fa-coins me-2"></i> Frais Scolarite
+                </a>
+             </li>
+             <li><a class="dropdown-item" href="{% url 'liste_eleves_par_classe' %}">
+                <i class="fas fa-credit-card me-2"></i> Payement
+                </a>
+             </li>
+             
+             
+        </ul>
+</li>
+
+
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="empDropdown" role="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            <i class="fas fa-calendar-alt me-2"></i>Emploi du temps
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="empDropdown"> 
+            <li>
+                <a class="dropdown-item" href="{% url 'liste_emploi_du_temps' %}">
+                    <i class="fas fa-calendar-alt me-2"></i> Liste emploi du temps
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="{% url 'liste_classes_emp' %}">
+                    <i class="fas fa-chalkboard me-2"></i> Classe
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="{% url 'liste_enseignants_emp' %}">
+                    <i class="fas fa-user-tie me-2"></i> Professeur
+                </a>
+            </li>           
+        </ul>
+
+</li>
+
+
 <li class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" id="notifDropdown" role="button" data-bs-toggle="dropdown"
             aria-expanded="false">
@@ -180,7 +225,40 @@
                 </a>
             </li>
         </ul> 
-</li>    
+</li>  
+
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="archDropdown" role="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            <i class="fa-solid fa-box-archive me-2"></i>Archive
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="archDropdown"> 
+             <li><a class="dropdown-item" href="{% url 'liste_archives' %}">
+                <i class="fas fa-archive fa-spin"></i>Liste Archive
+                </a>
+             </li>
+        </ul>
+</li>   
+
+
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="restDropdown" role="button" data-bs-toggle="dropdown"
+       aria-expanded="false">
+        <i class="fa-solid fa-rotate-left me-2"></i>Restaure
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="restDropdown">
+        <li><a class="dropdown-item" href="{% url 'liste_eleves_bis' %}">
+                <i class="fas fa-file-alt me-2"></i>Notes
+            </a>
+        </li>
+        <li><a class="dropdown-item" href="{% url 'liste_eleves_par_classe_rest' %}">
+                <i class="fas fa-credit-card me-2"></i>Paiements
+            </a>
+        </li>
+    </ul>
+</li>
+
+
 <li class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown"
             aria-expanded="false">
@@ -192,7 +270,11 @@
                 </a>
              </li>
         </ul>
-</li>            
+</li>    
+
+      
+
+
 {% endif %}
 
 

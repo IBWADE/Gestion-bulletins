@@ -1,8 +1,8 @@
 from django import forms
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.shortcuts import get_object_or_404
-from .models import Eleve, Classe, Enseignant, Etablissement, Matiere, Note, CustomUser, Notification, Absence, AnneeScolaire, NiveauScolaire, ChoixMatiere
-from django.forms import SelectDateWidget
+from .models import Eleve, Classe, Enseignant, Etablissement, Matiere, Note, CustomUser, Notification, Absence, AnneeScolaire, NiveauScolaire, ChoixMatiere, Paiement, Frais, EmploiDuTemps
+from django.forms import SelectDateWidget, ValidationError
 from django.contrib.auth.forms import UserCreationForm
 
 
@@ -152,7 +152,91 @@ class EleveForm(forms.ModelForm):
                 matieres_filtrees = Matiere.objects.all()
 
             # Assurer que l'élève ne choisit que les matières disponibles
-            self.fields['classe'].queryset = Classe.objects.filter(etablissement=etablissement)    
+            self.fields['classe'].queryset = Classe.objects.filter(etablissement=etablissement)  
+
+
+class PaiementForm(forms.ModelForm):
+    class Meta:
+        model = Paiement
+        fields = ['eleve', 'frais', 'montant_paye', 'date_paiement', 'mode_paiement', 'statut', 'reference', 'mois', 'annee_scolaire']
+        exclude = ['annee_scolaire']  # ✅ Exclure annee_scolaire pour éviter l'erreur
+        widgets = {
+            'eleve': forms.Select(attrs={'class': 'form-control'}),
+            'frais': forms.Select(attrs={'class': 'form-control'}),
+            'montant_paye': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'date_paiement': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'mode_paiement': forms.Select(attrs={'class': 'form-control'}),
+            'statut': forms.Select(attrs={'class': 'form-control'}),
+            'reference': forms.TextInput(attrs={'class': 'form-control'}),
+            'mois': forms.Select(attrs={'class': 'form-control'}),
+            'annee_scolaire': forms.HiddenInput(),  # Champ caché pour l'année scolaire
+        }
+        labels = {
+            'eleve': 'Élève',
+            'frais': 'Frais',
+            'montant_paye': 'Montant payé',
+            'date_paiement': 'Date de paiement',
+            'mode_paiement': 'Mode de paiement',
+            'statut': 'Statut du paiement',
+            'reference': 'Référence (optionnelle)',
+            'mois': 'Mois concerné',
+        }
+
+    def __init__(self, *args, **kwargs):
+        echeance = kwargs.pop('echeance', None)  # Récupérer l'échéance passée en argument
+        super().__init__(*args, **kwargs)
+
+        if echeance:
+            # Pré-remplir les champs en fonction de l'échéance
+            self.fields['eleve'].initial = echeance.eleve
+            self.fields['frais'].initial = echeance.frais
+            self.fields['montant_paye'].initial = echeance.montant_du
+            self.fields['statut'].initial = 'paye'  # Par défaut, le statut est "payé"
+            # Déterminer le mois en fonction de la date de l'échéance
+            if echeance.date_echeance:
+                self.fields['mois'].initial = echeance.date_echeance.month
+
+
+class PaiementRetroactifForm(forms.ModelForm):
+    nombre_mois = forms.IntegerField(
+        min_value=1,
+        max_value=12,  # Limite à 12 mois pour éviter des erreurs
+        label="Nombre de mois à payer",
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
+
+    class Meta:
+        model = Paiement
+        fields = ['eleve', 'frais', 'montant_paye', 'date_paiement', 'mode_paiement', 'statut', 'reference', 'nombre_mois']
+        widgets = {
+            'eleve': forms.HiddenInput(),  # Masquer le champ élève (il sera pré-rempli)
+            'frais': forms.HiddenInput(),  # Masquer le champ frais (il sera pré-rempli)
+            'montant_paye': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'date_paiement': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'mode_paiement': forms.Select(attrs={'class': 'form-control'}),
+            'statut': forms.Select(attrs={'class': 'form-control'}),
+            'reference': forms.TextInput(attrs={'class': 'form-control'}),
+        } 
+
+
+class FraisForm(forms.ModelForm):
+    class Meta:
+        model = Frais
+        fields = ['type_frais', 'montant', 'classe', 'annee_scolaire', 'description']
+        widgets = {
+            'type_frais': forms.Select(attrs={'class': 'form-control'}),
+            'montant': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'classe': forms.Select(attrs={'class': 'form-control'}),
+            'annee_scolaire': forms.Select(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+        labels = {
+            'type_frais': 'Type de frais',
+            'montant': 'Montant à payer',
+            'classe': 'Classe',
+            'annee_scolaire': 'Année scolaire',
+            'description': 'Description (optionnelle)',
+        }                   
 
 
 
@@ -204,6 +288,12 @@ class ClasseForm(forms.ModelForm):
             )
 
 
+
+
+
+
+
+
 class NiveauScolaireForm(forms.ModelForm):
     class Meta:
         model = NiveauScolaire
@@ -244,7 +334,7 @@ class ChoixMatiereForm(forms.Form):
 
             if appliquer_regle_4e or niveau.nom == "3e":
                 pc = Matiere.objects.filter(nom="Science Physique").first()
-                langues = Matiere.objects.filter(nom__in=["Espagnol", "Arabe", "Allemand"])
+                langues = Matiere.objects.filter(nom__in=["Espagnol", "Arabe", "Allemand", "Italien"])
 
                 # Si PC est présent ET qu'une langue est aussi disponible, on garde les deux
                 if pc in matieres_optionnelles and matieres_optionnelles.intersection(langues).exists():
@@ -288,6 +378,60 @@ class EnseignantForm(forms.ModelForm):
         help_texts = {
             'classes': "Sélectionnez les classes enseignées",
         }
+
+
+class EmploiDuTempsForm(forms.ModelForm):
+    class Meta:
+        model = EmploiDuTemps
+        fields = ['classe', 'enseignant', 'matiere', 'jour', 'heure_debut', 'heure_fin']
+        widgets = {
+            'heure_debut': forms.TimeInput(attrs={'type': 'time'}),
+            'heure_fin': forms.TimeInput(attrs={'type': 'time'}),
+        }     
+
+    def clean(self):
+        cleaned_data = super().clean()
+        enseignant = cleaned_data.get('enseignant')
+        classe = cleaned_data.get('classe')
+        jour = cleaned_data.get('jour')
+        heure_debut = cleaned_data.get('heure_debut')
+        heure_fin = cleaned_data.get('heure_fin')
+
+        # Vérifier les conflits pour l'enseignant
+        conflit_enseignant = EmploiDuTemps.objects.filter(
+            enseignant=enseignant,
+            jour=jour,
+            heure_debut__lt=heure_fin,
+            heure_fin__gt=heure_debut,
+        ).exclude(pk=self.instance.pk if self.instance else None)  
+
+        if conflit_enseignant.exists():
+            raise ValidationError("L'enseignant est déjà occupé à ce créneau horaire.")
+
+        # Vérifier les conflits pour la classe
+        conflit_classe = EmploiDuTemps.objects.filter(
+            classe=classe,
+            jour=jour,
+            heure_debut__lt=heure_fin,
+            heure_fin__gt=heure_debut,
+        ).exclude(pk=self.instance.pk if self.instance else None)  
+
+        if conflit_classe.exists():
+            raise ValidationError("La classe a déjà un cours programmé à ce créneau horaire.")
+
+        return cleaned_data
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'enseignant' in self.data:
+            try:
+                enseignant_id = int(self.data.get('enseignant'))
+                self.fields['matiere'].queryset = Matiere.objects.filter(enseignant__id=enseignant_id)
+            except (ValueError, TypeError):
+                pass  
+        elif self.instance.pk:
+            self.fields['matiere'].queryset = self.instance.enseignant.matieres.all()
+       
 
 
 
@@ -373,7 +517,6 @@ class EnseignantClassesForm(forms.ModelForm):
         fields = ['classes']
         
 
-# Formulaire RechercheGlobaleForm
 class RechercheGlobaleForm(forms.Form):
     TYPE_RECHERCHE_CHOICES = [
         ('eleves_classe', 'Impression Bulletin par élève dans une classe'),
@@ -383,6 +526,10 @@ class RechercheGlobaleForm(forms.Form):
         ('classes_enseignant', 'Liste des classes d\'un enseignant'),
         ('enseignants_etablissement', 'Enseignants d\'un établissement'),
         ('liste_classes_etablissement', 'Liste des classes d\'un établissement'),
+        ('eleves_retard_paiement', 'Élèves en retard de paiement'),
+        ('paiements_par_eleve', 'Paiements effectués par un élève'),
+        ('paiements_par_periode', 'Paiements effectués sur une période donnée'),
+        
     ]
 
     type_recherche = forms.ChoiceField(
@@ -420,6 +567,16 @@ class RechercheGlobaleForm(forms.Form):
         required=False,
         widget=forms.Select(attrs={'class': 'form-control'})
     )
+    date_debut = forms.DateField(
+        label="Date début",
+        required=False,
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    date_fin = forms.DateField(
+        label="Date fin",
+        required=False,
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -428,6 +585,8 @@ class RechercheGlobaleForm(forms.Form):
         eleve = cleaned_data.get('eleve')
         enseignant = cleaned_data.get('enseignant')
         etablissement = cleaned_data.get('etablissement')
+        date_debut = cleaned_data.get('date_debut')
+        date_fin = cleaned_data.get('date_fin')
 
         if type_recherche == 'bulletin_eleve' and not eleve:
             self.add_error('eleve', "L'élève est requis pour ce type de recherche.")
@@ -437,8 +596,12 @@ class RechercheGlobaleForm(forms.Form):
             self.add_error('enseignant', "L'enseignant est requis pour ce type de recherche.")
         if type_recherche in ['enseignants_etablissement', 'liste_classes_etablissement'] and not etablissement:
             self.add_error('etablissement', "L'établissement est requis pour ce type de recherche.")
-        return cleaned_data
+        if type_recherche == 'paiements_par_periode' and (not date_debut or not date_fin):
+            self.add_error('date_debut', "Les dates de début et de fin sont requises pour cette recherche.")
+            self.add_error('date_fin', "Les dates de début et de fin sont requises pour cette recherche.")
+        
 
+        return cleaned_data
 
 
 class ArchiverAnneeForm(forms.Form):

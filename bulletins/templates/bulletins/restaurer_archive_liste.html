@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Restaurer une Archive{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-warning text-white">
+            <h2 class="mb-0">
+                <i class="fas fa-redo me-2"></i>Restaurer une archive
+            </h2>
+        </div>
+        <div class="card-body">
+            {% if archives %}
+            <table class="table table-bordered text-center">
+                <thead class="table-light">
+                    <tr>
+                        <th>Année Scolaire</th>
+                        <th>Élève</th>
+                        <th>Classe</th>
+                        <th>Établissement</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for archive in archives %}
+                    <tr>
+                        <td>{{ archive.annee_scolaire }}</td>
+                        <td>{{ archive.eleve.prenom }} {{ archive.eleve.nom }}</td>
+                        <td>{{ archive.classe }}</td>
+                        <td>{{ archive.etablissement }}</td>
+                        <td>
+                            <a href="{% url 'restaurer_archive' archive.id %}" class="btn btn-success btn-sm">
+                                <i class="fas fa-redo me-2"></i>Restaurer
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Aucune archive disponible pour restauration.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">Aucune archive à restaurer. Veuillez ajouter des archives d'abord.</p>
+            {% endif %}
+
+            <!-- Archives des paiements -->
+            <h3 class="mt-5 mb-4">Archives des paiements</h3>
+            {% if archives_paiements %}
+            <table class="table table-bordered text-center">
+                <thead class="table-light">
+                    <tr>
+                        <th>Année Scolaire</th>
+                        <th>Élève</th>
+                        <th>Frais</th>
+                        <th>Montant Payé</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for paiement in archives_paiements %}
+                    <tr>
+                        <td>{{ paiement.annee_scolaire }}</td>
+                        <td>{{ paiement.eleve_prenom }} {{ paiement.eleve_nom }}</td>
+                        <td>{{ paiement.frais }}</td>
+                        <td>{{ paiement.montant_paye }} FCFA</td>
+                        <td>
+                            <a href="{% url 'restaurer_paiement' paiement.id %}" class="btn btn-success btn-sm">
+                                <i class="fas fa-redo me-2"></i>Restaurer
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Aucune archive disponible pour restauration.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">Aucun paiement à restaurer. Veuillez ajouter des archives de paiement.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

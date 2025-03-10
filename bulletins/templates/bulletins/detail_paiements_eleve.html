@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg border-0 rounded">
+        <!-- En-tête avec un intitulé clair -->
+        <div class="card-header bg-gradient text-white text-center py-3" style="background: linear-gradient(45deg, #007bff, #6610f2);">
+            <h2 class="mb-0">📌 Détails des Paiements</h2>
+            <p class="mb-0">Informations financières de <strong>{{ eleve.nom }} {{ eleve.prenom }}</strong></p>
+        </div>
+
+        <div class="card-body">
+            <!-- Section récapitulative des paiements -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h5 class="text-muted">Total Payé</h5>
+                            <h3 class="text-success fw-bold">{{ total_paye|default:"0" }} FCFA</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h5 class="text-muted">Restant à Payer</h5>
+                            <h3 class="text-danger fw-bold">{{ restant_a_payer|default:"0" }} FCFA</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h5 class="text-muted">Nombre de Transactions</h5>
+                            <h3 class="text-primary fw-bold">{{ paiements|length }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if paiements %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Année scolaire</th>
+                                <th>Date</th>
+                                <th>Frais</th>
+                                <th>Montant payé</th>
+                                <th>Mode de paiement</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for paiement in paiements %}
+                            <tr>
+                                <td>{{ paiement.annee_scolaire.nom }}</td>
+                                <td>{{ paiement.date_paiement }}</td>
+                                <td>{{ paiement.frais.type_frais }}</td>
+                                <td class="fw-bold text-success">{{ paiement.montant_paye }} FCFA</td>
+                                <td><span class="badge bg-info">{{ paiement.get_mode_paiement_display }}</span></td>
+                                <td>
+                                    {% if paiement.statut == 'payé' %}
+                                        <span class="badge bg-success">Payé</span>
+                                    {% elif paiement.statut == 'en attente' %}
+                                        <span class="badge bg-warning text-dark">En attente</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Non payé</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center">
+                    Aucun paiement enregistré pour cet élève.
+                </div>
+            {% endif %}
+
+            <div class="text-center mt-4">
+                <a href="{% url 'liste_eleves_par_classe_rest' %}" class="btn btn-secondary btn-lg shadow">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ajout de styles pour embellir le tableau -->
+<style>
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+    .badge {
+        font-size: 1rem;
+        padding: 8px 12px;
+        border-radius: 8px;
+    }
+    .btn {
+        border-radius: 8px;
+        transition: all 0.3s ease-in-out;
+    }
+    .btn:hover {
+        transform: scale(1.05);
+    }
+    .card-body h3 {
+        font-size: 1.8rem;
+    }
+</style>
+
+{% endblock %}

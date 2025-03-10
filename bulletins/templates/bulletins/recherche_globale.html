@@ -211,6 +211,125 @@
    {% endif %}
 
 
+   {% if resultats.eleves_retard %}
+    <div class="card shadow mb-4">
+        <div class="card-header bg-danger text-white">
+            <h3>Élèves en retard de paiement</h3>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for eleve in resultats.eleves_retard %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ eleve.prenom }} {{ eleve.nom }}
+                        <span class="badge bg-danger">En retard</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endif %}
+
+
+{% if type_recherche == 'paiements_par_eleve' and resultats.paiements %}
+    <div class="card shadow mb-4">
+        <div class="card-header bg-success text-white">
+            <h3>Paiements de {{ resultats.eleve.prenom }} {{ resultats.eleve.nom }}</h3>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered text-center">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Montant</th>
+                        <th>Statut</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for paiement in resultats.paiements %}
+                        <tr>
+                            <td>{{ paiement.date_paiement }}</td>
+                            <td>{{ paiement.montant_paye }} FCFA</td>
+                            <td>
+                                {% if paiement.statut == "paye" %}
+                            <span class="badge bg-success">Payé</span>
+                                    {% elif paiement.statut == "partiel" %}
+                                        <span class="badge bg-warning">Partiel</span>
+                                    {% elif paiement.statut == "impaye" %}
+                                        <span class="badge bg-danger">Impayé</span>
+                                    {% elif paiement.statut == "annule" %}
+                                        <span class="badge bg-secondary">Annulé</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Statut inconnu</span>
+                                    {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'imprimer_recu' paiement.id %}" 
+                                class="btn btn-sm btn-outline-dark"
+                                onclick="ouvrirPopupRecu(this.href); return false;">
+                                    <i class="fas fa-receipt"></i> Reçu
+                                </a>
+                            </td>
+                            <script>
+                                function ouvrirPopupRecu(url) {
+                                    window.open(url, '_blank', 'width=800,height=600');
+                                }
+                            </script>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
+
+
+
+{% if type_recherche == 'paiements_par_periode' and resultats.paiements_periode %}
+    <div class="card shadow mb-4">
+        <div class="card-header bg-info text-white">
+            <h3>Paiements entre {{ resultats.date_debut }} et {{ resultats.date_fin }}</h3>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered text-center">
+                <thead>
+                    <tr>
+                        <th>Élève</th>
+                        <th>Date</th>
+                        <th>Montant</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for paiement in resultats.paiements_periode %}
+                        <tr>
+                            <td>{{ paiement.eleve.nom }} {{ paiement.eleve.prenom }}</td>
+                            <td>{{ paiement.date_paiement }}</td>
+                            <td>{{ paiement.montant_paye }} FCFA</td>
+                            <td>
+                                <a href="{% url 'imprimer_recu' paiement.id %}" 
+                                class="btn btn-sm btn-outline-dark"
+                                onclick="ouvrirPopupRecu(this.href); return false;">
+                                    <i class="fas fa-receipt"></i> Reçu
+                                </a>
+                            </td>
+                            <script>
+                                function ouvrirPopupRecu(url) {
+                                    window.open(url, '_blank', 'width=800,height=600');
+                                }
+                            </script>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
+
+
+
+
+
     {% if not resultats %}
         <p class="text-center text-muted">Aucun résultat trouvé.</p>
     {% endif %}

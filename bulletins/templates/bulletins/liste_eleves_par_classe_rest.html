@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Gestion des Paiements Restaurés{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Intitulé élégant -->
+    <div class="text-center mb-4">
+        <h1 class="fw-bold text-primary">
+            <i class="fas fa-money-check-alt"></i> Gestion des Paiements Restaurés
+        </h1>
+        <p class="text-muted">Consultez les paiements restaurés des élèves par classe.</p>
+    </div>
+
+    <div class="card shadow-lg border-0 rounded">
+        <div class="card-header bg-gradient text-white text-center py-3" 
+             style="background: linear-gradient(45deg, #007bff, #6610f2);">
+            <h2 class="mb-0">Liste des Élèves par Classe</h2>
+        </div>
+        <div class="card-body">
+            
+            <!-- Formulaire de recherche et filtre par classe -->
+            <form method="get" class="mb-4">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="classe" class="form-label">Filtrer par Classe</label>
+                        <select name="classe" id="classe" class="form-select shadow-sm">
+                            <option value="">Toutes les classes</option>
+                            {% for classe in classes %}
+                            <option value="{{ classe.id }}" {% if selected_classe == classe.id %}selected{% endif %}>
+                                {{ classe.nom }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="search" class="form-label">Rechercher un élève</label>
+                        <input type="text" name="search" id="search" class="form-control shadow-sm" 
+                               placeholder="Nom ou prénom" value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100 shadow">
+                            <i class="fas fa-search"></i> Rechercher
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Nombre total d'élèves -->
+            <div class="text-end mb-3">
+                <span class="badge bg-info fs-6 shadow-sm">
+                    <i class="fas fa-user-graduate"></i> Total élèves : {{ eleves|length }}
+                </span>
+            </div>
+
+            <!-- Liste des élèves -->
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th><i class="fas fa-user"></i> Nom</th>
+                            <th><i class="fas fa-user"></i> Prénom</th>
+                            <th><i class="fas fa-school"></i> Classe</th>                       
+                            <th><i class="fas fa-cogs"></i> Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for eleve in eleves %}
+                        <tr class="animate-hover">
+                            <td>{{ eleve.nom }}</td>
+                            <td>{{ eleve.prenom }}</td>
+                            <td>
+                                <span class="badge bg-secondary shadow-sm">{{ eleve.classe.nom }}</span>
+                            </td>                     
+                            <td>
+                                <a href="{% url 'details_payement_rest' eleve.id %}" 
+                                   class="btn btn-outline-info btn-sm shadow-sm"
+                                   data-bs-toggle="tooltip" 
+                                   title="Voir paiement">
+                                    <i class="fas fa-eye"></i> Voir
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">Aucun élève trouvé.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ajout de styles et animations -->
+<style>
+    .form-control, .form-select {
+        border-radius: 10px;
+        padding: 10px;
+        transition: all 0.3s ease-in-out;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #007bff;
+        box-shadow: 0px 0px 8px rgba(0, 123, 255, 0.5);
+    }
+    .btn {
+        border-radius: 8px;
+        transition: 0.3s ease-in-out;
+    }
+    .btn:hover {
+        transform: scale(1.05);
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+    .card {
+        border-radius: 15px;
+    }
+    .animate-hover:hover {
+        background: rgba(0, 123, 255, 0.05);
+        transition: 0.3s;
+    }
+</style>
+
+{% endblock %}

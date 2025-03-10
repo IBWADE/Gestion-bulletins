@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Détails des notes - {{ eleve.prenom }} {{ eleve.nom }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #28a745, #218838);">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="fas fa-file-alt me-2"></i> Détails des Notes (Semestre {{ semestre }}) - {{ annee_scolaire }}
+                </h2>
+                <div class="btn-group">
+                    <a href="{% url 'liste_eleves_bis' %}" class="btn btn-light"><i class="fas fa-arrow-left"></i> Retour</a>
+                    <button onclick="window.print()" class="btn btn-warning">
+                        <i class="fas fa-print me-2"></i> Imprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h4 class="text-primary fw-bold">
+                        <i class="fas fa-user-graduate me-2"></i>
+                        {{ eleve.prenom }} {{ eleve.nom }}
+                    </h4>
+                    <p class="mb-0 text-muted">
+                        <i class="fas fa-users me-2"></i>
+                        Classe : <strong>{{ eleve.classe.nom }}</strong>
+                    </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    {% if moyennes_par_matiere %}
+                        <div class="badge bg-success fs-5 p-2">
+                            Moyenne générale : <strong>{{ moyenne_generale|floatformat:2 }}/20</strong>
+                        </div>
+                        <p class="mt-2 text-muted">
+                            {% if rang_general %}
+                                Rang : 
+                                <span class="badge {% if rang_general == 1 %}bg-warning text-dark{% else %}bg-primary{% endif %}">
+                                    {{ rang_general }}<sup>{% if rang_general == 1 %}er{% else %}ème{% endif %}</sup> / {{ total_eleves }} élèves
+                                </span>
+                            {% endif %}
+                        </p>
+                    {% else %}
+                        <div class="badge bg-secondary fs-5 p-2">Pas encore de moyenne</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if moyennes_par_matiere %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped text-center">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Matière</th>
+                            <th>Coef.</th>
+                            <th>Devoirs</th>
+                            <th>Composition</th>
+                            <th>Moyenne</th>
+                            <th>Points</th>
+                            <th>Rang</th>
+                            <th>Appréciation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for matiere in moyennes_par_matiere %}
+                        <tr>
+                            <td class="text-start">{{ matiere.matiere }}</td>
+                            <td>{{ matiere.coefficient }}</td>
+                            <td>{{ matiere.note_devoir|floatformat:2 }}</td>
+                            <td>{{ matiere.note_composition|floatformat:2 }}</td>
+                            <td class="fw-bold {% if matiere.moyenne_matiere >= 10 %}text-success{% else %}text-danger{% endif %}">
+                                {{ matiere.moyenne_matiere|floatformat:2 }}
+                            </td>
+                            <td class="text-success fw-bold">{{ matiere.points_matiere|floatformat:2 }}</td>
+                            <td>
+                                {% if matiere.rang_matiere %}
+                                    <span class="badge bg-info">{{ matiere.rang_matiere }}</span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ matiere.appreciation|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-secondary">
+                        <tr>
+                            <td colspan="5" class="text-end fw-bold">Total des points</td>
+                            <td class="text-success fw-bold">{{ total_points_general|floatformat:2 }}</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+                <p class="text-muted text-center mt-3">Aucune note enregistrée pour ce semestre.</p>
+            {% endif %}
+        </div>
+
+        <div class="card-footer text-center text-muted">
+            <small>Détail généré le {% now "d/m/Y à H:i" %}</small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .card-header { border-bottom: 2px solid #000; }
+        .btn-group { display: none; }
+        .badge { border: 1px solid #000; }
+    }
+</style>
+{% endblock %}

@@ -1,68 +1,143 @@
 {% extends 'base.html' %}
-{% block title %}Liste des Archives{% endblock %}
+
+{% block title %}Gestion des Archives Scolaires{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
+    <!-- Messages Flash -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Titre Principal -->
     <div class="card shadow-lg">
-        <div class="card-header bg-info text-white">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">
-                    <i class="fas fa-school me-2"></i>Liste des archives
-                </h2>
-                <a href="{% url 'archiver_annee' %}" class="btn btn-light">
-                    <i class="fas fa-plus-circle me-2"></i>Ajouter une archive
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">
+                <i class="fas fa-archive me-2"></i> Gestion des Archives Scolaires
+            </h2>
+            <div>
+                <a href="{% url 'archiver_annee' %}" class="btn btn-light me-2">
+                    <i class="fas fa-plus-circle me-2"></i> Ajouter une archive
+                </a>
+                <a href="{% url 'restaurer_archive_liste' %}" class="btn btn-warning">
+                    <i class="fas fa-redo me-2"></i> Restaurer une archive
                 </a>
             </div>
         </div>
+
         <div class="card-body">
+            <!-- Section: Archives des notes et absences -->
+            <h3 class="mb-4"><i class="fas fa-book me-2"></i> Archives des Notes et Absences</h3>
             {% if archives %}
-            <table class="table table-bordered">
-                <thead class="table-light">
-                    <tr>
-                        <th>Année Scolaire</th>
-                        <th>Élève</th>
-                        <th>Classe</th>
-                        <th>Établissement</th>
-                        <th>Moyenne Annuelle</th>
-                        <th>Passe Classe</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for archive in archives %}
-                    <tr>
-                        <td>{{ archive.annee_scolaire }}</td>
-                        <td>{{ archive.eleve.prenom }} {{ archive.eleve.nom }}</td>
-                        <td>{{ archive.classe }}</td>
-                        <td>{{ archive.etablissement }}</td>
-                        <td>{{ archive.moyenne_annuelle|floatformat:2 }}/20</td>              
-                            
-                        <td>
-                            {% if archive.passe_classe %}
-                            <span class="text-success">Oui</span>
-                            {% else %}
-                            <span class="text-danger">Non</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="{% url 'detail_archive' archive.id %}" class="btn btn-sm btn-primary">
-                                <i class="fas fa-eye me-2"></i>Détails
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center text-muted">Aucune archive disponible.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                <div class="table-responsive text-center">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Année</th>
+                                <th>Élève</th>
+                                <th>Classe</th>
+                                <th>Établissement</th>
+                                <th>Moyenne</th>
+                                <th>Passage</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for archive in archives %}
+                                <tr>
+                                    <td>{{ archive.annee_scolaire }}</td>
+                                    <td>{{ archive.eleve.prenom }} {{ archive.eleve.nom }}</td>
+                                    <td>{{ archive.classe }}</td>
+                                    <td>{{ archive.etablissement }}</td>
+                                    <td><strong>{{ archive.moyenne_annuelle|floatformat:2 }}</strong> / 20</td>
+                                    <td>
+                                        <span class="badge {% if archive.passe_classe %}bg-success{% else %}bg-danger{% endif %}">
+                                            {% if archive.passe_classe %}Oui{% else %}Non{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'detail_archive' archive.id %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye me-2"></i> Voir Détails
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="7" class="text-center text-muted">Aucune archive disponible.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             {% else %}
-            <p class="text-muted text-center">Aucune archive n'a encore été créée.</p>
+                <p class="text-muted text-center">Aucune archive n'a encore été créée.</p>
+            {% endif %}
+
+            <!-- Section: Archives des paiements -->
+            <h3 class="mt-5 mb-4"><i class="fas fa-money-bill-wave me-2"></i> Archives des Paiements</h3>
+            {% if archives_paiements %}
+                <div class="table-responsive text-center">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Année</th>
+                                <th>Élève</th>
+                                <th>Frais</th>
+                                <th>Montant Payé</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for paiement in archives_paiements %}
+                                <tr>
+                                    <td>{{ paiement.annee_scolaire }}</td>
+                                    <td>{{ paiement.eleve_prenom }} {{ paiement.eleve_nom }}</td>
+                                    <td>{{ paiement.frais }}</td>
+                                    <td><strong>{{ paiement.montant_paye }} FCFA</strong></td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4" class="text-center text-muted">Aucun paiement archivé.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted text-center">Aucun paiement n'a encore été archivé.</p>
+            {% endif %}
+
+            <!-- Section: Archives des frais -->
+            <h3 class="mt-5 mb-4"><i class="fas fa-hand-holding-usd me-2"></i> Archives des Frais</h3>
+            {% if archives_frais %}
+                <div class="table-responsive text-center">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Année</th>
+                                <th>Classe</th>
+                                <th>Type de Frais</th>
+                                <th>Montant</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for frais in archives_frais %}
+                                <tr>
+                                    <td>{{ frais.annee_scolaire }}</td>
+                                    <td>{{ frais.classe }}</td>
+                                    <td>{{ frais.type_frais }}</td>
+                                    <td><strong>{{ frais.montant }} FCFA</strong></td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4" class="text-center text-muted">Aucune donnée archivée.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted text-center">Aucun frais n'a encore été archivé.</p>
             {% endif %}
         </div>
     </div>
 </div>
 {% endblock %}
-
-
-

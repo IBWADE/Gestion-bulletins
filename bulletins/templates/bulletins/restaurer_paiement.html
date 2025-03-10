@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Restaurer un Paiement{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-warning text-white">
+            <h2 class="mb-0">
+                <i class="fas fa-redo me-2"></i>Restaurer un Paiement
+            </h2>
+        </div>
+        <div class="card-body">
+            <h3 class="mb-4">Confirmation de la restauration du paiement</h3>
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label"><strong>Annee Scoalire :</strong></label>
+                    <p> {{ paiement.annee_scolaire }}</p>  <!-- Afficher directement le nom de l'élève -->
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Élève :</strong></label>
+                    <p>{{ paiement.eleve_prenom }} {{ paiement.eleve_nom }}</p>  <!-- Afficher directement le nom de l'élève -->
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Frais :</strong></label>
+                    <p>{{ paiement.frais }}</p>  <!-- Afficher directement le type de frais -->
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Montant Payé :</strong></label>
+                    <p>{{ paiement.montant_paye }} FCFA</p>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Date du Paiement :</strong></label>
+                    <p>{{ paiement.date_paiement }}</p>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Mode de Paiement :</strong></label>
+                    <p>{{ paiement.get_mode_paiement_display }}</p>  <!-- Afficher le choix avec get_FOO_display -->
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Référence du Paiement :</strong></label>
+                    <p>{{ paiement.reference }}</p>
+                </div>
+
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-redo me-2"></i>Restaurer le Paiement
+                </button>
+                <a href="{% url 'liste_archives' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Retourner à la Liste des Archives
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

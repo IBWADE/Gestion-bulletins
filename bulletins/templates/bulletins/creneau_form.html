@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-lg border-0 rounded-3">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+            <h3 class="mb-0"><i class="fas fa-clock me-2"></i> {{ titre }}</h3>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Erreur(s) :</strong>
+                        <ul>
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.classe.id_for_label }}" class="form-label">
+                                <i class="fas fa-school me-2"></i> Classe
+                            </label>
+                            {{ form.classe }}
+                            <small class="text-danger">{{ form.classe.errors }}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.enseignant.id_for_label }}" class="form-label">
+                                <i class="fas fa-chalkboard-teacher me-2"></i> Enseignant
+                            </label>
+                            {{ form.enseignant }}
+                            <small class="text-danger">{{ form.enseignant.errors }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.matiere.id_for_label }}" class="form-label">
+                        <i class="fas fa-book me-2"></i> Matière
+                    </label>
+                    {{ form.matiere }}
+                    <small class="text-danger">{{ form.matiere.errors }}</small>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.jour.id_for_label }}" class="form-label">
+                                <i class="fas fa-calendar-alt me-2"></i> Jour
+                            </label>
+                            {{ form.jour }}
+                            <small class="text-danger">{{ form.jour.errors }}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.heure_debut.id_for_label }}" class="form-label">
+                                <i class="fas fa-clock me-2"></i> Heure de début
+                            </label>
+                            {{ form.heure_debut }}
+                            <small class="text-danger">{{ form.heure_debut.errors }}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.heure_fin.id_for_label }}" class="form-label">
+                                <i class="fas fa-hourglass-end me-2"></i> Heure de fin
+                            </label>
+                            {{ form.heure_fin }}
+                            <small class="text-danger">{{ form.heure_fin.errors }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'liste_emploi_du_temps' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Annuler
+                    </a>
+                    <button onclick="history.back()" class="btn btn-dark">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- JavaScript pour mettre à jour les matières dynamiquement -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const enseignantSelect = document.getElementById("id_enseignant");
+        const matiereSelect = document.getElementById("id_matiere");
+
+        enseignantSelect.addEventListener("change", function() {
+            const enseignantId = this.value;
+            if (enseignantId) {
+                fetch(`/get_matieres_par_enseignant/?enseignant_id=${enseignantId}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Vider la liste des matières
+                    matiereSelect.innerHTML = "<option value=''>---------</option>";
+
+                    // Ajouter les nouvelles matières
+                    data.matieres.forEach(matiere => {
+                        const option = document.createElement("option");
+                        option.value = matiere.id;
+                        option.textContent = matiere.nom;
+                        matiereSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error("Erreur lors du chargement des matières :", error));
+            } else {
+                // Réinitialiser si aucun enseignant n'est sélectionné
+                matiereSelect.innerHTML = "<option value=''>---------</option>";
+            }
+        });
+    });
+</script>
+{% endblock %}
+

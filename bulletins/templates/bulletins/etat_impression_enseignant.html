@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Emploi du temps - {{ enseignant.nom }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary"><i class="fas fa-chalkboard-teacher me-2"></i> Emploi du temps - {{ enseignant.prenom }} {{ enseignant.nom }}</h2>
+        
+        <!-- Bouton d'impression aligné à droite avec arrondis -->
+        <button onclick="window.print()" class="btn btn-primary rounded-pill">
+            <i class="fas fa-print"></i> Imprimer
+        </button>
+        
+        <!-- Bouton retour automatique -->
+        <button onclick="history.back()" class="btn btn-dark rounded-pill">
+            <i class="fas fa-arrow-left"></i> Retour automatique
+        </button>
+    </div>
+
+    <!-- Informations de l'établissement et de l'année scolaire -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5>{{ etablissement.nom }}</h5>
+            <p>{{ etablissement.adresse }}</p>
+            <p><strong>Téléphone:</strong> {{ etablissement.telephone }}</p>
+            <p><strong>Année scolaire:</strong> {{ annee_scolaire.nom }}</p>
+        </div>
+        {% if etablissement.logo %}
+        <img src="{{ etablissement.logo.url }}" alt="Logo" style="max-height: 100px;">
+        {% endif %}
+    </div>
+
+    <!-- Tableau avec bordures arrondies, couleur et ombre -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover rounded-3 shadow-sm" style="border-collapse: separate; border-spacing: 0 10px;">
+            <thead class="table-dark">
+                <tr>
+                    {% for jour in emploi_par_jour.keys %}
+                    <th class="text-center py-3 px-4" style="border-radius: 8px; background-color: #4e73df;">{{ jour }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    {% for jour, creneaux in emploi_par_jour.items %}
+                    <td class="p-3" style="background-color: #f8f9fc; border-radius: 8px; border-color: #e0e0e0;">
+                        {% for creneau in creneaux %}
+                        <div class="mb-3 card p-3 rounded-3 shadow-sm" style="border: 1px solid #e0e0e0; background-color: #ffffff;">
+                            <strong class="d-block text-primary">{{ creneau.matiere.nom }}</strong>
+                            <div class="text-muted">
+                                <small>{{ creneau.heure_debut|time:"H:i" }} - {{ creneau.heure_fin|time:"H:i" }}</small>
+                            </div>
+                            <div class="mt-2">
+                                <small>Classe : <span class="fw-bold">{{ creneau.classe.nom }}</span></small><br>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

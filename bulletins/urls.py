@@ -6,8 +6,6 @@ from django.contrib.auth import views as auth_views
 
 
 
-
-
 schema_view = get_schema_view(
     openapi.Info(
         title="API Gestion Scolaire",
@@ -62,6 +60,34 @@ urlpatterns = [
     path('modifier-eleve/<int:eleve_id>/', views.modifier_eleve, name='modifier_eleve'),
     path('supprimer-eleve/<int:eleve_id>/', views.supprimer_eleve, name='supprimer_eleve'),
 
+     # URLs pour les frais
+    path('liste-frais/', views.liste_frais, name='liste_frais'),
+    path('ajout-frais/', views.ajouter_frais, name='ajouter_frais'),
+    path('modifier-frais/<int:frais_id>/', views.modifier_frais, name='modifier_frais'),
+    path('supprimer-frais/<int:frais_id>/', views.supprimer_frais, name='supprimer_frais'),
+
+    # URLs pour les paiements
+    path('paiements/', views.liste_paiements, name='liste_paiements'),
+    path('paiements/enregistrer/', views.enregistrer_paiement, name='enregistrer_paiement'),
+    path('paiements/enregistrer/<int:eleve_id>/<int:frais_id>/', views.enregistrer_paiement, name='enregistrer_paiement_eleve'),
+    path('liste-eleves-par-classe/', views.liste_eleves_par_classe, name='liste_eleves_par_classe'),
+    path('paiement/inscription/<int:eleve_id>/', views.paiement_inscription, name='paiement_inscription'),
+    path('paiement/mensuel/<int:eleve_id>/', views.paiement_mensuel, name='paiement_mensuel'),
+    path('paiement/mensuel/<int:eleve_id>/<int:mois>/', views.paiement_mensuel, name='paiement_mensuel_mois'),
+    path('paiement/details/<int:paiement_id>/', views.details_paiement, name='details_paiement'),
+    path('paiement/retroactif/<int:eleve_id>/', views.paiement_retroactif, name='paiement_retroactif'),
+    path('detail-paiement-retro/details/<int:paiement_id>/', views.details_paiement_retro, name='details_paiement_retro'),
+    path('eleve/<int:eleve_id>/paiements/', views.liste_paiements_eleve, name='liste_paiements_eleve'),
+    path('paiement/<int:paiement_id>/recu/', views.imprimer_recu, name='imprimer_recu'),
+    path('eleve/<int:eleve_id>/echeances-impayees/', views.echeances_impayees_eleve, name='echeances_impayees_eleve'),
+    path('echeance/<int:echeance_id>/payer/', views.paiement_echeance, name='paiement_echeance'),
+    path('facture/<int:echeance_id>/', views.facture_echeance, name='facture_echeance'),
+
+    # URLs pour les échéances
+    path('eleves/<int:eleve_id>/echeances/', views.echeances_impayees, name='echeances_impayees'),
+
+    
+
     # Gestion des établissements
     path('saisie-etablissement/', views.saisie_etablissement, name='saisie_etablissement'),
     path('liste-etablissements/', views.liste_etablissements, name='liste_etablissements'),
@@ -77,7 +103,7 @@ urlpatterns = [
     path('liste-eleves-classe/<int:classe_id>/', views.liste_eleves_classe, name='liste_eleves_classe'),
     path('liste-eleves-classe-vis/<int:classe_id>/', views.liste_eleves_classe_vis, name='liste_eleves_classe_vis'),
     path('liste-classes-etablissement-popup/<int:etablissement_id>/', views.liste_classes_etablissement_popup, name='liste_classes_etablissement_popup'),
-
+    
     # Gestion des enseignants
     path('saisie-enseignant/', views.saisie_enseignant, name='saisie_enseignant'),
     path('liste-enseignants/', views.liste_enseignants, name='liste_enseignants'),
@@ -97,6 +123,18 @@ urlpatterns = [
     path('modifier-matiere/<int:matiere_id>/', views.modifier_matiere, name='modifier_matiere'),
     path('supprimer-matiere/<int:matiere_id>/', views.supprimer_matiere, name='supprimer_matiere'),
     path('eleve/<int:eleve_id>/choix-matieres/', views.choisir_matieres_optionnelles, name='choisir_matieres'),
+
+    # Gestion emploi du temps
+    path('liste-classes-emp/', views.liste_classes_emp, name='liste_classes_emp'),
+    path('liste-enseignants-emp/', views.liste_enseignants_emp, name='liste_enseignants_emp'),
+    path('emploi-du-temps/classe/<int:classe_id>/', views.emploi_du_temps_classe, name='emploi_du_temps_classe'),
+    path('emploi-du-temps/enseignant/<int:enseignant_id>/', views.emploi_du_temps_enseignant, name='emploi_du_temps_enseignant'),
+    path('ajouter-creneau/', views.ajouter_creneau, name='ajouter_creneau'),
+    path('modifier-creneau/<int:creneau_id>/', views.modifier_creneau, name='modifier_creneau'),
+    path('liste-emploi-du-temps/', views.liste_emploi_du_temps, name='liste_emploi_du_temps'),
+    path('etat-impression/classe/<int:classe_id>/', views.etat_impression_classe, name='etat_impression_classe'),
+    path('etat-impression/enseignant/<int:enseignant_id>/', views.etat_impression_enseignant, name='etat_impression_enseignant'),
+    path('get_matieres_par_enseignant/', views.get_matieres_par_enseignant, name='get_matieres_par_enseignant'),
 
     # Gestion des notes
     path('saisie-notes-eleve/<int:eleve_id>/notes/saisie/<int:semestre>/', views.saisie_notes_eleve, name='saisie_notes_eleve'),
@@ -118,6 +156,16 @@ urlpatterns = [
     path('archiver-annee/', views.archiver_annee, name='archiver_annee'),
     path('liste-archives/', views.liste_archives, name='liste_archives'),
     path('detail-archive/<int:archive_id>/', views.detail_archive, name='detail_archive'),
+
+    # Restaurer
+    path('restaurer-annee-scolaire/<int:archive_id>', views.restaurer_archive, name='restaurer_archive'),
+    path('liste-restaurer-archive/', views.restaurer_archive_liste, name='restaurer_archive_liste'),
+    path('details-notes-eleve-rest/<int:eleve_id>/notes/saisie/<int:semestre>/<str:annee_scolaire>/', views.details_notes_eleve_restaurer, name='details_notes_eleve_rest'),
+    path('liste-eleves-bis/', views.liste_eleves_bis, name='liste_eleves_bis'),
+    path('restaurer-paiement/<int:paiement_id>/', views.restaurer_paiement, name='restaurer_paiement'),
+    path('liste-eleves-par-classe-rest/', views.liste_eleves_par_classe_rest, name='liste_eleves_par_classe_rest'),
+    path('detail-eleve-paiement-rest/<int:eleve_id>/paiements/', views.details_payement_rest, name='details_payement_rest'),
+
 
     # Annee
     path('archiver-annee/', views.archiver_annee, name='archiver_annee'),

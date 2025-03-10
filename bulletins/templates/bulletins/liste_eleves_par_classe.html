@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Liste des Élèves par Classe{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">Liste des Élèves par Classe</h2>
+        </div>
+        <div class="card-body">
+
+            <!-- Formulaire de recherche et filtre par classe -->
+            <form method="get" class="mb-4">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="classe" class="form-label fw-bold">Classe</label>
+                        <select name="classe" id="classe" class="form-control">
+                            <option value="">Toutes les classes</option>
+                            {% for classe in classes %}
+                            <option value="{{ classe.id }}" {% if selected_classe == classe.id %}selected{% endif %}>{{ classe.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="search" class="form-label fw-bold">Rechercher un élève</label>
+                        <input type="text" name="search" id="search" class="form-control" placeholder="Nom ou prénom" value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter"></i> Filtrer
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Liste des élèves -->
+            <table class="table table-bordered table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nom</th>
+                        <th>Prénom</th>
+                        <th>Classe</th>
+                        <th>Mois manquants</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for eleve in eleves %}
+                    <tr>
+                        <td>{{ eleve.nom }}</td>
+                        <td>{{ eleve.prenom }}</td>
+                        <td>{{ eleve.classe.nom }}</td>
+                        <td>
+                            {% if eleve.mois_manquants %}
+                                {% for mois in eleve.mois_manquants %}
+                                <span class="badge bg-danger">{{ mois }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="badge bg-success">À jour</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a href="{% url 'paiement_inscription' eleve.id %}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-credit-card"></i> Inscription
+                                </a>
+
+                                <!-- Bouton pour payer le mois précédent -->
+                                    {% if mois_precedent not in eleve.mois_payes %}
+                                    <a href="{% url 'paiement_mensuel_mois' eleve.id mois_precedent %}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-calendar-alt"></i> Payer {{ mois_precedent|month_name }}
+                                    </a>
+                                    {% endif %}
+
+                                    <!-- Bouton pour payer le mois suivant -->
+                                    {% if mois_suivant not in eleve.mois_payes %}
+                                    <a href="{% url 'paiement_mensuel_mois' eleve.id mois_suivant %}" class="btn btn-warning btn-sm">
+                                        <i class="fas fa-calendar-plus"></i> Payer {{ mois_suivant|month_name }}
+                                    </a>
+                                    {% endif %}
+
+                                <!-- Bouton pour payer rétroactif -->
+                                {% if eleve.a_un_paiement_retroactif %}
+                                <a href="{% url 'details_paiement_retro' paiement_id=eleve.get_paiement_retroactif.id %}" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-history"></i> Paiement rétroactif
+                                </a>
+                                {% else %}
+                                <a href="{% url 'paiement_retroactif' eleve.id %}" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-exclamation-circle"></i> Payer rétroactif
+                                </a>
+                                {% endif %}
+                                <!-- Bouton pour voir les échéances impayées -->
+                                        <a href="{% url 'echeances_impayees_eleve' eleve.id %}" class="btn btn-dark btn-sm">
+                                    <i class="fas fa-exclamation-triangle"></i> Échéances
+                                </a>
+
+                                <a href="{% url 'liste_paiements_eleve' eleve.id %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-list"></i> Voir paiements
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Ajout de styles pour améliorer l'apparence -->
+<style>
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        padding: 10px;
+    }
+    .form-label {
+        font-size: 1rem;
+        font-weight: bold;
+    }
+    .table {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .btn {
+        border-radius: 8px;
+    }
+    .gap-2 {
+        gap: 5px;
+    }
+</style>
+
+{% endblock %}

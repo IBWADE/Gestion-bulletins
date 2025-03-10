@@ -1,8 +1,11 @@
+from decimal import Decimal
 from django.shortcuts import render, get_object_or_404
-from .models import Eleve, Note, Etablissement, Classe, Enseignant, Matiere, CustomUser, Absence, Notification, Archive, AnneeScolaire, ChoixMatiere, NiveauScolaire
+from .models import (Eleve, Note, Etablissement, Classe, Enseignant, Matiere, CustomUser, Absence, Notification, 
+                     Archive, AnneeScolaire, ChoixMatiere, NiveauScolaire, Paiement, Frais, Paiement, Echeance, EmploiDuTemps,
+                       NoteArchive, ArchivePaiement, ArchiveNote, PaiementRestauré, ArchiveFrais, FraisRestauré)
 from django.views import View
 from django.shortcuts import render, redirect
-from .forms import EleveForm, EtablissementForm, ClasseForm, EnseignantForm, MatiereForm, NoteForm, NotesEleveForm, EnseignantClassesForm, RechercheGlobaleForm, NotificationForm, AbsenceForm, ArchiverAnneeForm, AnneeScolaireForm, NiveauScolaireForm
+from .forms import EleveForm, EtablissementForm, ClasseForm, EnseignantForm, MatiereForm, NoteForm, NotesEleveForm, EnseignantClassesForm, RechercheGlobaleForm, NotificationForm, AbsenceForm, ArchiverAnneeForm, AnneeScolaireForm, NiveauScolaireForm, PaiementForm
 from django.db.models import Sum, FloatField, ExpressionWrapper, Case, When, Window, F, Count, Max, Value, OuterRef, Subquery, ProtectedError
 from django.db.models.functions import Rank, Coalesce, Cast, Round
 from django.utils import timezone  # Import nécessaire
@@ -14,7 +17,7 @@ from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
-from .forms import CustomUserCreationForm, CustomUserForm, ChoixMatiereForm
+from .forms import CustomUserCreationForm, CustomUserForm, ChoixMatiereForm, FraisForm, PaiementRetroactifForm, EmploiDuTempsForm
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
@@ -24,6 +27,14 @@ from django.db.models import Avg
 import logging
 from django.utils.timezone import now
 from django.http import HttpResponseForbidden, JsonResponse
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
+from datetime import datetime
+from datetime import timedelta
+from .utils import generer_echeances_pour_eleve  # Importer la fonction
+from dateutil.relativedelta import relativedelta
+from datetime import date
+from django.db import transaction
+
 
 
 
@@ -194,11 +205,17 @@ def creer_notification_absence(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Note)
 def creer_notification_bulletin(sender, instance, created, **kwargs):
     if created:
-        Notification.objects.create(
-            utilisateur=instance.eleve.parent,
-            titre="Nouvelle note ajoutée",
-            message=f"Une nouvelle note a été ajoutée pour {instance.eleve.prenom} {instance.eleve.nom} en {instance.matiere.nom}."
-        )      
+        # Vérifier si l'élève a un parent
+        if instance.eleve.parent:
+            Notification.objects.create(
+                utilisateur=instance.eleve.parent,
+                titre="Nouvelle note ajoutée",
+                message=f"Une nouvelle note a été ajoutée pour {instance.eleve.prenom} {instance.eleve.nom} en {instance.matiere.nom}."
+            )
+        else:
+            # Gérer le cas où l'élève n'a pas de parent (par exemple, afficher un message dans les logs ou ignorer la création)
+            print(f"Aucun parent trouvé pour l'élève {instance.eleve.prenom} {instance.eleve.nom}. Notification non envoyée.")
+     
 
 
 @login_required
@@ -821,18 +838,31 @@ def details_enfant(request, eleve_id):
 @user_passes_test(is_admin, login_url='login')
 def saisie_eleve(request):
     if request.method == 'POST':
-        # Si le formulaire est soumis
         form = EleveForm(request.POST)
         if form.is_valid():
             eleve = form.save(commit=False)
             if request.user.role == 'parent':  # Assure-toi que l'utilisateur est un parent
                 eleve.parent = request.user
+
+            # Vérifier que l'élève a une classe attribuée
+            if not eleve.classe:
+                messages.error(request, "L'élève doit être affecté à une classe.")
+                return render(request, 'bulletins/saisie_eleve.html', {'form': form})
+
             eleve.save()
+
+            try:
+                # Générer les échéances pour l'élève
+                from .utils import generer_echeances_pour_eleve
+                generer_echeances_pour_eleve(eleve)
+                messages.success(request, "Élève enregistré avec succès et échéances générées.")
+            except Exception as e:
+                messages.error(request, f"Une erreur est survenue lors de la génération des échéances : {str(e)}")
+
             return redirect('liste_eleves')
     else:
         form = EleveForm()
-    
-    # Afficher le formulaire dans le template
+
     return render(request, 'bulletins/saisie_eleve.html', {'form': form})
 
 
@@ -857,6 +887,44 @@ def liste_eleves(request):
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'bulletins/liste_eleves.html', {'eleves': page_obj})
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def liste_eleves_bis(request):
+    query = request.GET.get('q', '')
+    
+    # Vérifier le rôle de l'utilisateur
+    if request.user.role == 'enseignant':
+        enseignant = get_object_or_404(Enseignant, user=request.user)
+        eleves = Eleve.objects.filter(classe__in=enseignant.classes.all())
+    else:  # Admin peut voir tous les élèves
+        eleves = Eleve.objects.all()
+
+    # Filtrer par recherche sur le nom ou prénom
+    if query:
+        eleves = eleves.filter(Q(prenom__icontains=query) | Q(nom__icontains=query))
+
+    # Trier les élèves avant la pagination (par exemple, par nom et prénom)
+    eleves = eleves.order_by('nom', 'prenom')
+
+    # Pagination
+    paginator = Paginator(eleves, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Récupérer l'année scolaire en cours à partir de l'établissement de l'élève
+    annee_scolaire = None
+    if page_obj:
+        eleve = page_obj.object_list.first()  # Prendre le premier élève pour récupérer son année scolaire
+        if eleve.classe and eleve.classe.etablissement:
+            annee_scolaire = eleve.classe.etablissement.annee_scolaire.nom  # Accéder à l'année scolaire via l'établissement
+
+    context = {
+        'eleves': page_obj,
+        'annee_scolaire': annee_scolaire,
+    }
+    return render(request, 'bulletins/liste_eleves_bis.html', context)
+
 
 
 
@@ -1436,7 +1504,7 @@ def saisie_notes_eleve(request, eleve_id, semestre):
             note.eleve = eleve
             note.semestre = semestre
             note.save()
-            messages.success(request, "Note enregistrée avec succès.")
+           # messages.success(request, "Note enregistrée avec succès.")
             return redirect('saisie_notes_eleve', eleve_id=eleve.id, semestre=semestre)
 
     else:
@@ -1552,6 +1620,136 @@ def details_notes_eleve(request, eleve_id, semestre):
     }
     return render(request, 'bulletins/details_notes_eleve.html', context)
 
+
+def details_notes_eleve_restaurer(request, eleve_id, semestre, annee_scolaire):
+    # Déterminer l'année scolaire actuelle si non spécifiée
+    if annee_scolaire is None or annee_scolaire == "None":
+        annee_scolaire = "2024-2025"  # Remplacez par une méthode dynamique si nécessaire
+
+    eleve = get_object_or_404(Eleve, id=eleve_id)
+    total_eleves = Eleve.objects.count()  # Nombre total d'élèves dans la base
+
+    moyennes_par_matiere = []
+    total_points_general = 0
+    total_coefficients = 0
+
+    # ✅ Récupérer les notes archivées de l'élève pour l'année et le semestre spécifiés
+    notes = NoteArchive.objects.filter(eleve=eleve, semestre=semestre, annee_scolaire=annee_scolaire)
+
+    # ✅ Préparation des rangs par matière
+    rangs_par_matiere = {}
+    
+    for note in notes:
+        moyenne_matiere = (note.note_devoir + note.note_composition) / 2.0
+        points_matiere = moyenne_matiere * note.matiere.coefficient
+
+        # ✅ Calculer l’appréciation pour chaque matière
+        if moyenne_matiere >= 16:
+            appreciation_matiere = "Excellent"
+        elif moyenne_matiere >= 14:
+            appreciation_matiere = "Très Bien"
+        elif moyenne_matiere >= 12:
+            appreciation_matiere = "Bien"
+        elif moyenne_matiere >= 10:
+            appreciation_matiere = "Assez Bien"
+        else:
+            appreciation_matiere = "Insuffisant"
+
+        moyennes_par_matiere.append({
+            'matiere': note.matiere.nom,
+            'coefficient': note.matiere.coefficient,
+            'note_devoir': note.note_devoir,
+            'note_composition': note.note_composition,
+            'moyenne_matiere': moyenne_matiere,
+            'points_matiere': points_matiere,
+            'appreciation': appreciation_matiere,
+            'semestre': semestre,
+        })
+
+        total_points_general += points_matiere
+        total_coefficients += note.matiere.coefficient
+
+    # ✅ Calcul de la moyenne générale restaurée
+    moyenne_generale = total_points_general / total_coefficients if total_coefficients > 0 else None
+
+    # ✅ Calcul du rang général et du rang par matière
+    rang_general = None
+
+    if notes.exists():
+        # 📌 1. Calcul des moyennes générales pour le classement
+        classement_general = NoteArchive.objects.filter(semestre=semestre, annee_scolaire=annee_scolaire)
+
+        moyennes_generales = {}
+        
+        for note in classement_general:
+            if note.eleve not in moyennes_generales:
+                moyennes_generales[note.eleve] = {'total_points': 0, 'total_coefficients': 0}
+            moyenne_matiere = (note.note_devoir + note.note_composition) / 2.0
+            moyennes_generales[note.eleve]['total_points'] += moyenne_matiere * note.matiere.coefficient
+            moyennes_generales[note.eleve]['total_coefficients'] += note.matiere.coefficient
+
+        # 📌 2. Calcul de la moyenne générale par élève
+        moyennes_generales = {
+            eleve: data['total_points'] / data['total_coefficients'] if data['total_coefficients'] > 0 else 0
+            for eleve, data in moyennes_generales.items()
+        }
+
+        # 📌 3. Classement des élèves selon leur moyenne générale
+        classement_eleve = sorted(moyennes_generales.items(), key=lambda x: x[1], reverse=True)
+        
+        # 📌 4. Attribution du rang général
+        rang_general = [eleve[0] for eleve in classement_eleve].index(eleve) + 1
+
+        # 📌 5. Calcul des rangs par matière
+        for matiere in notes.values_list('matiere', flat=True).distinct():
+            notes_matiere = NoteArchive.objects.filter(matiere=matiere, semestre=semestre, annee_scolaire=annee_scolaire)
+            
+            moyennes_par_eleve = {
+                note.eleve: (note.note_devoir + note.note_composition) / 2.0
+                for note in notes_matiere
+            }
+
+            classement_matiere = sorted(moyennes_par_eleve.items(), key=lambda x: x[1], reverse=True)
+            
+            rangs_par_matiere[matiere] = {eleve: idx + 1 for idx, (eleve, _) in enumerate(classement_matiere)}
+
+    # ✅ Appréciation générale
+    appreciation_generale = None
+    if moyenne_generale is not None:
+        if moyenne_generale >= 16:
+            appreciation_generale = "Excellent 🌟"
+        elif moyenne_generale >= 14:
+            appreciation_generale = "Très Bien ✅"
+        elif moyenne_generale >= 12:
+            appreciation_generale = "Bien 👍"
+        elif moyenne_generale >= 10:
+            appreciation_generale = "Passable 🙂"
+        elif moyenne_generale >= 9:
+            appreciation_generale = "Insuffisant ⚠️"    
+        else:
+            appreciation_generale = "Faible ❗"
+    else:
+        appreciation_generale = "Pas de notes restaurées"
+
+
+       
+    # ✅ Ajout du rang par matière dans les moyennes
+    for item in moyennes_par_matiere:
+        matiere_id = Matiere.objects.get(nom=item['matiere']).id
+        item['rang_matiere'] = rangs_par_matiere.get(matiere_id, {}).get(eleve, "Non classé")
+
+    context = {
+        'eleve': eleve,
+        'moyennes_par_matiere': moyennes_par_matiere,
+        'total_points_general': total_points_general,
+        'moyenne_generale': moyenne_generale,
+        'semestre': semestre,
+        'annee_scolaire': annee_scolaire,
+        'rang_general': rang_general,
+        'appreciation_generale': appreciation_generale,
+        'total_eleves': total_eleves,
+    }
+    return render(request, 'bulletins/details_notes_eleve_restaurer.html', context)
 
 
 @login_required
@@ -2083,6 +2281,28 @@ def recherche_globale(request):
             elif type_recherche == 'liste_classes_etablissement' and etablissement:
                 classes = Classe.objects.filter(etablissement=etablissement)
                 resultats = {'classes_etablissement': classes, 'etablissement': etablissement}
+            # 🔹 Élèves en retard de paiement
+            elif type_recherche == 'eleves_retard_paiement':
+                eleves = Eleve.objects.filter(
+                    echeances__statut='impaye',
+                    echeances__date_echeance__lt=date.today()  # Seulement les échéances en retard
+                ).distinct()
+                resultats = {'eleves_retard': eleves}
+
+            # 🔹 Paiements effectués par un élève
+            elif type_recherche == 'paiements_par_eleve' and eleve:
+                paiements = Paiement.objects.filter(eleve=eleve)
+                resultats = {'paiements': paiements, 'eleve': eleve}
+
+            # 🔹 Paiements effectués sur une période donnée
+            elif type_recherche == 'paiements_par_periode':
+                date_debut = form.cleaned_data.get('date_debut')
+                date_fin = form.cleaned_data.get('date_fin')
+
+                if date_debut and date_fin:
+                    paiements = Paiement.objects.filter(date_paiement__range=[date_debut, date_fin])
+                    resultats = {'paiements_periode': paiements, 'date_debut': date_debut, 'date_fin': date_fin}
+    
 
     else:
         form = RechercheGlobaleForm()
@@ -2860,9 +3080,75 @@ def statistiques_globales(request):
     return render(request, 'bulletins/statistiques_globales.html', context)
 
 
+def determiner_mention(moyenne):
+    if moyenne >= 16:
+        return "Très Bien"
+    elif moyenne >= 14:
+        return "Bien"
+    elif moyenne >= 12:
+        return "Assez Bien"
+    elif moyenne >= 10:
+        return "Passable"
+    else:
+        return "Insuffisant"
+
+
+def calculer_rang_semestre(classe, semestre, annee_scolaire):
+    """
+    Calcule le rang de chaque élève dans une classe pour un semestre donné.
+    """
+    eleves = Eleve.objects.filter(classe=classe)
+    rangs = []
+
+    for eleve in eleves:
+        # Filtrer les notes par semestre et année scolaire via la classe et l'établissement
+        notes = Note.objects.filter(
+            eleve=eleve,
+            semestre=semestre,
+            eleve__classe__etablissement__annee_scolaire=annee_scolaire
+        ).annotate(
+            points_matiere=ExpressionWrapper(
+                ((F('note_devoir') + F('note_composition')) / 2.0) * F('matiere__coefficient'),
+                output_field=FloatField()
+            )
+        )
+        total_points = sum(note.points_matiere for note in notes)
+        rangs.append({'eleve': eleve, 'total_points': total_points})
+
+    # Trier les élèves par total_points décroissant
+    rangs.sort(key=lambda x: x['total_points'], reverse=True)
+
+    # Attribuer les rangs
+    for index, rang in enumerate(rangs):
+        rang['rang'] = index + 1
+
+    return rangs
+
+
+def calculer_rang_annuel(classe, annee_scolaire):
+    """
+    Calcule le rang annuel de chaque élève dans une classe.
+    """
+    eleves = Eleve.objects.filter(classe=classe)
+    rangs = []
+
+    for eleve in eleves:
+        # Calculer la moyenne annuelle en utilisant la méthode de l'élève
+        moyenne_annuelle = eleve.moyenne_annuelle()
+        rangs.append({'eleve': eleve, 'moyenne_annuelle': moyenne_annuelle})
+
+    # Trier les élèves par moyenne_annuelle décroissante
+    rangs.sort(key=lambda x: x['moyenne_annuelle'], reverse=True)
+
+    # Attribuer les rangs
+    for index, rang in enumerate(rangs):
+        rang['rang'] = index + 1
+
+    return rangs
+
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser, login_url='login')
+@user_passes_test(is_admin, login_url='login')
 def archiver_annee(request):
     if request.method == 'POST':
         form = ArchiverAnneeForm(request.POST)
@@ -2884,12 +3170,15 @@ def archiver_annee(request):
                     messages.error(request, "L'année scolaire est déjà archivée.")
                     return redirect('archiver_annee')
 
-                # Récupération des élèves ayant des notes
-                eleves = Eleve.objects.filter(note__isnull=False).distinct()
+                # Récupération des élèves ayant des notes pour l'année scolaire actuelle
+                eleves = Eleve.objects.filter(
+                    classe__etablissement__annee_scolaire=annee_scolaire_actuelle
+                ).distinct()
 
-                def calculer_notes_semestre(eleve, semestre):
-                    """Calcul des notes par semestre"""
-                    return Note.objects.filter(eleve=eleve, semestre=semestre, matiere__isnull=False).annotate(
+                # Archiver les notes et les absences
+                for eleve in eleves:
+                    # Calcul des notes par semestre
+                    notes_semestre_1 = Note.objects.filter(eleve=eleve, semestre=1).annotate(
                         moyenne_matiere=ExpressionWrapper(
                             (F('note_devoir') + F('note_composition')) / 2.0,
                             output_field=FloatField()
@@ -2903,102 +3192,140 @@ def archiver_annee(request):
                         'note_devoir', 'note_composition', 'moyenne_matiere', 'points_matiere'
                     )
 
-                def calculer_moyenne(notes):
-                    """Calcul de la moyenne d'un élève"""
-                    total_points = sum(note['points_matiere'] for note in notes)
-                    total_coeffs = sum(note['matiere__coefficient'] for note in notes)
-                    return total_points / total_coeffs if total_coeffs > 0 else 0
+                    notes_semestre_2 = Note.objects.filter(eleve=eleve, semestre=2).annotate(
+                        moyenne_matiere=ExpressionWrapper(
+                            (F('note_devoir') + F('note_composition')) / 2.0,
+                            output_field=FloatField()
+                        ),
+                        points_matiere=ExpressionWrapper(
+                            ((F('note_devoir') + F('note_composition')) / 2.0) * F('matiere__coefficient'),
+                            output_field=FloatField()
+                        )
+                    ).values(
+                        'matiere__id', 'matiere__nom', 'matiere__coefficient',
+                        'note_devoir', 'note_composition', 'moyenne_matiere', 'points_matiere'
+                    )
 
-                def determiner_mention(moyenne):
-                    """Déterminer la mention selon la moyenne"""
-                    if moyenne >= 16:
-                        return "Très Bien"
-                    elif moyenne >= 14:
-                        return "Bien"
-                    elif moyenne >= 12:
-                        return "Assez Bien"
-                    elif moyenne >= 10:
-                        return "Passable"
-                    else:
-                        return "Insuffisant"
-
-                # Création des archives pour chaque élève
-                for eleve in eleves:
-                    notes_semestre_1 = list(calculer_notes_semestre(eleve, 1))
-                    notes_semestre_2 = list(calculer_notes_semestre(eleve, 2))
-
+                    # Calcul des moyennes
                     total_points_s1 = sum(note['points_matiere'] for note in notes_semestre_1)
-                    total_points_s2 = sum(note['points_matiere'] for note in notes_semestre_2)
+                    total_coefficients_s1 = sum(note['matiere__coefficient'] for note in notes_semestre_1)
+                    moyenne_generale_s1 = total_points_s1 / total_coefficients_s1 if total_coefficients_s1 > 0 else 0
 
-                    moyenne_generale_s1 = calculer_moyenne(notes_semestre_1)
-                    moyenne_generale_s2 = calculer_moyenne(notes_semestre_2)
+                    total_points_s2 = sum(note['points_matiere'] for note in notes_semestre_2)
+                    total_coefficients_s2 = sum(note['matiere__coefficient'] for note in notes_semestre_2)
+                    moyenne_generale_s2 = total_points_s2 / total_coefficients_s2 if total_coefficients_s2 > 0 else 0
 
                     moyenne_annuelle = (moyenne_generale_s1 + moyenne_generale_s2) / 2 if moyenne_generale_s1 and moyenne_generale_s2 else max(moyenne_generale_s1, moyenne_generale_s2, 0)
 
+                    # Déterminer si l'élève passe en classe supérieure
                     passe_classe = moyenne_annuelle >= 10
 
-                    mention_s1 = determiner_mention(moyenne_generale_s1)
-                    mention_s2 = determiner_mention(moyenne_generale_s2)
-                    mention_annuelle = determiner_mention(moyenne_annuelle)
-
+                    # Archiver les absences
                     absences = [{'date': absence.date.isoformat(), 'motif': absence.motif} for absence in Absence.objects.filter(eleve=eleve)]
 
+                    # Calculer les rangs
+                    rangs_semestre_1 = calculer_rang_semestre(eleve.classe, 1, annee_scolaire_actuelle)
+                    rangs_semestre_2 = calculer_rang_semestre(eleve.classe, 2, annee_scolaire_actuelle)
+                    rangs_annuel = calculer_rang_annuel(eleve.classe, annee_scolaire_actuelle)
+
+                    # Trouver le rang de l'élève
+                    rang_s1 = next((r['rang'] for r in rangs_semestre_1 if r['eleve'] == eleve), None)
+                    rang_s2 = next((r['rang'] for r in rangs_semestre_2 if r['eleve'] == eleve), None)
+                    rang_annuel = next((r['rang'] for r in rangs_annuel if r['eleve'] == eleve), None)
+
+                    # Créer l'archive pour l'élève
                     Archive.objects.create(
                         annee_scolaire=annee_scolaire_actuelle.nom,
                         eleve=eleve,
                         classe=eleve.classe.nom if eleve.classe else None,
-                        etablissement=eleve.classe.etablissement.nom if eleve.classe and eleve.classe.etablissement else None,
-                        notes={'semestre_1': notes_semestre_1, 'semestre_2': notes_semestre_2},
+                        etablissement=eleve.classe.etablissement if eleve.classe and eleve.classe.etablissement else None,
+                        notes={'semestre_1': list(notes_semestre_1), 'semestre_2': list(notes_semestre_2)},
                         absences=absences,
                         moyenne_annuelle=moyenne_annuelle,
                         passe_classe=passe_classe,
                         total_points_semestre_1=total_points_s1,
                         total_points_semestre_2=total_points_s2,
-                        mention_semestre_1=mention_s1,
-                        mention_semestre_2=mention_s2,
-                        mention_annuelle=mention_annuelle
+                        mention_semestre_1=determiner_mention(moyenne_generale_s1),
+                        mention_semestre_2=determiner_mention(moyenne_generale_s2),
+                        mention_annuelle=determiner_mention(moyenne_annuelle),
+                        rang_semestre_1=rang_s1,
+                        rang_semestre_2=rang_s2,
+                        rang_annuel=rang_annuel
                     )
 
-                # Attribution des rangs
-                def attribuer_rangs(annee_scolaire):
-                    for field, order in [
-                        ('total_points_semestre_1', '-'),
-                        ('total_points_semestre_2', '-'),
-                        ('moyenne_annuelle', '-')
-                    ]:
-                        sorted_eleves = Archive.objects.filter(annee_scolaire=annee_scolaire).order_by(f"{order}{field}")
-                        for index, eleve in enumerate(sorted_eleves, start=1):
-                            setattr(eleve, f"rang_{field.split('_')[-1]}", index)
-                            eleve.save()
+                # Archiver les paiements
+                # Archiver les paiements
+                paiements_a_archiver = Paiement.objects.filter(annee_scolaire=annee_scolaire_actuelle)
+                for paiement in paiements_a_archiver:
+                    eleve = paiement.eleve  # Récupérer l'élève associé au paiement
+                    
+                    # Créer l'archive pour le paiement
+                    ArchivePaiement.objects.create(
+                        annee_scolaire=annee_scolaire_actuelle.nom,
+                        eleve_id=paiement.eleve.id,  # ID de l'élève
+                        eleve_nom=eleve.nom,  # Nom de l'élève
+                        eleve_prenom=eleve.prenom,  # Prénom de l'élève
+                        frais=paiement.frais.get_type_frais_display(),
+                        montant_paye=paiement.montant_paye,
+                        date_paiement=paiement.date_paiement,
+                        mode_paiement=paiement.mode_paiement,
+                        statut=paiement.statut,
+                        reference=paiement.reference,
+                        date_archivage=timezone.now()
+                    )
 
-                attribuer_rangs(annee_scolaire_actuelle.nom)
 
-                # Supprimer uniquement les notes de l'année archivée
-                Note.objects.filter(eleve__in=eleves).delete()
+                    # Archiver les frais
+                    frais_a_archiver = Frais.objects.filter(annee_scolaire=annee_scolaire_actuelle)
+                    for frais in frais_a_archiver:
+                        # Créer l'archive pour le frais
+                        ArchiveFrais.objects.create(
+                            annee_scolaire=annee_scolaire_actuelle.nom,
+                            type_frais=frais.get_type_frais_display(),
+                            montant=frais.montant,
+                            classe=frais.classe.nom if frais.classe else None,
+                            description=frais.description,
+                            date_archivage=timezone.now()
+                        )
 
-                # Gestion du passage en classe supérieure ou retrait de la classe
+
+                # Supprimer les emplois du temps de l'année en cours
+                emplois_du_temps_a_supprimer = EmploiDuTemps.objects.filter(classe__etablissement__annee_scolaire=annee_scolaire_actuelle)
+                emplois_du_temps_a_supprimer.delete()
+
+                # Supprimer les autres données de l'année en cours
+                Note.objects.filter(eleve__classe__etablissement__annee_scolaire=annee_scolaire_actuelle).delete()
+                Absence.objects.filter(eleve__classe__etablissement__annee_scolaire=annee_scolaire_actuelle).delete()
+                paiements_a_archiver.delete()
+                # Supprimer les notifications de l'année en cours
+                notifications_a_supprimer = Notification.objects.filter(
+                    date__year=annee_scolaire_actuelle.debut.year
+                )
+                notifications_a_supprimer.delete()
+
+                # Récupérer la nouvelle année scolaire
+                nouvelle_annee_scolaire = AnneeScolaire.objects.filter(
+                    debut__gt=annee_scolaire_actuelle.fin
+                ).first()
+
+                if not nouvelle_annee_scolaire:
+                    messages.error(request, "Aucune nouvelle année scolaire n'a été trouvée.")
+                    return redirect('archiver_annee')
+
+                # Supprimer les échéances existantes pour la nouvelle année scolaire
                 for eleve in eleves:
-                    archive = Archive.objects.filter(eleve=eleve, annee_scolaire=annee_scolaire_actuelle.nom).latest('id')
+                    Echeance.objects.filter(
+                        eleve=eleve,
+                        date_echeance__gte=nouvelle_annee_scolaire.debut,
+                        date_echeance__lte=nouvelle_annee_scolaire.fin
+                    ).delete()
 
-                    if archive.passe_classe:
-                        classe_actuelle = eleve.classe
-                        if classe_actuelle and classe_actuelle.niveau:
-                            # Trouver le niveau suivant
-                            niveau_suivant = NiveauScolaire.objects.filter(ordre=classe_actuelle.niveau.ordre + 1).first()
-                            
-                            if niveau_suivant:
-                                # Trouver la classe correspondante dans le même établissement
-                                nouvelle_classe = Classe.objects.filter(niveau=niveau_suivant, etablissement=classe_actuelle.etablissement).first()
-                                eleve.classe = nouvelle_classe if nouvelle_classe else None
-                            else:
-                                eleve.classe = None  # Fin du cursus, pas de niveau suivant
-                        else:
-                            eleve.classe = None  # Aucune classe actuelle, on la met à None
-                    else:
-                        eleve.classe = None  # L'élève n'a pas validé son année, il doit être réaffecté
-                    eleve.save()
+                # Régénérer les échéances pour la nouvelle année scolaire
+                from .utils import generer_echeances_pour_eleve
+                for eleve in eleves:
+                    generer_echeances_pour_eleve(eleve)
 
-                messages.success(request, f"L'année scolaire {annee_scolaire_actuelle.nom} a été archivée avec succès.")
+                messages.success(request, f"L'année scolaire {annee_scolaire_actuelle.nom} a été archivée avec succès. Les échéances ont été régénérées pour la nouvelle année scolaire.")
                 return redirect('liste_archives')
 
             except Exception as e:
@@ -3011,25 +3338,36 @@ def archiver_annee(request):
     return render(request, 'bulletins/archiver_annee.html', {'form': form, 'title': 'Archiver une Année Scolaire'})
 
 
-
-
 @login_required
-@user_passes_test(is_admin_or_enseignant, login_url='login')
+@user_passes_test(is_admin, login_url='login')
 def liste_archives(request):
     # Récupérer toutes les archives
-    archives = Archive.objects.all().order_by('-annee_scolaire')  # Trier par année scolaire décroissante
+    archives = Archive.objects.all().order_by('-annee_scolaire')  # Trier par année scolaire décroissante    
+    archives_paiements = ArchivePaiement.objects.all().order_by('-annee_scolaire')
+    archives_frais = ArchiveFrais.objects.all().order_by('-annee_scolaire')
+
+    # Récupérer tous les élèves pour utiliser les prénoms et noms dans le template
+    eleves = {eleve.id: eleve for eleve in Eleve.objects.all()}
 
     context = {
-        'archives': archives,
+        'archives': archives,       
+        'archives_paiements': archives_paiements,       
+        'eleves': eleves,  # Passer les élèves au contexte
         'title': 'Liste des Archives',
+        'archives_frais': archives_frais,
     }
     return render(request, 'bulletins/liste_archives.html', context)
 
 
+
 @login_required
-@user_passes_test(is_admin_or_enseignant, login_url='login')
+@user_passes_test(is_admin, login_url='login')
 def detail_archive(request, archive_id):
     archive = get_object_or_404(Archive, id=archive_id)
+
+    # Récupérer les archives des frais, paiements et emplois du temps pour cette année scolaire    
+    archives_paiements = ArchivePaiement.objects.filter(annee_scolaire=archive.annee_scolaire)
+    
 
     # Vérifier si l'archive contient des notes
     notes_semestre_1 = archive.notes.get('semestre_1', []) if isinstance(archive.notes, dict) else []
@@ -3050,22 +3388,238 @@ def detail_archive(request, archive_id):
     moyenne_generale_s2 = total_points_s2 / total_coefficients_s2 if total_coefficients_s2 > 0 else 0
 
     context = {
-    'archive': archive,
-    'notes_semestre_1': notes_semestre_1,
-    'notes_semestre_2': notes_semestre_2,
-    'moyenne_generale_s1': moyenne_generale_s1,
-    'moyenne_generale_s2': moyenne_generale_s2,
-    'mention_semestre_1': archive.mention_semestre_1,
-    'mention_semestre_2': archive.mention_semestre_2,
-    'mention_annuelle': archive.mention_annuelle,
-    'rang_semestre_1': archive.rang_semestre_1,  # Ajout Rang S1
-    'rang_semestre_2': archive.rang_semestre_2,  # Ajout Rang S2
-    'rang_annuel': archive.rang_annuel,          # Ajout Rang Annuel
-    'title': 'Détail de l’Archive',
-}
+        'archive': archive,
+        'notes_semestre_1': notes_semestre_1,
+        'notes_semestre_2': notes_semestre_2,
+        'moyenne_generale_s1': moyenne_generale_s1,
+        'moyenne_generale_s2': moyenne_generale_s2,
+        'mention_semestre_1': archive.mention_semestre_1,
+        'mention_semestre_2': archive.mention_semestre_2,
+        'mention_annuelle': archive.mention_annuelle,
+        'rang_semestre_1': archive.rang_semestre_1,  # Ajout Rang S1
+        'rang_semestre_2': archive.rang_semestre_2,  # Ajout Rang S2
+        'rang_annuel': archive.rang_annuel,          # Ajout Rang Annuel       
+        'archives_paiements': archives_paiements,       
+        'title': 'Détail de l’Archive',
+    }
 
     return render(request, 'bulletins/detail_archive.html', context)
 
+
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def restaurer_archive(request, archive_id):
+    try:
+        archive = Archive.objects.get(id=archive_id)
+
+        if request.method == "POST":
+            # Exécuter la restauration seulement si le formulaire est soumis
+            annee_scolaire_restaurée = archive.annee_scolaire
+            annee_scolaire_actuelle = f"{timezone.now().year}-{timezone.now().year + 1}"
+
+            if annee_scolaire_restaurée == annee_scolaire_actuelle:
+                messages.error(request, "L'archive appartient déjà à l'année scolaire en cours.")
+                return redirect('liste_archives')
+
+            eleve = archive.eleve
+            if not eleve:
+                messages.error(request, "L'élève de cette archive n'existe plus.")
+                return redirect('liste_archives')
+
+            # Déboguer les types de données avant de restaurer
+            print(f"Archive notes: {archive.notes}")
+            print(f"Archive absences: {archive.absences}")
+
+            with transaction.atomic():
+                # Restaurer les notes dans NoteArchive
+                for semestre, notes in archive.notes.items():
+                    for note in notes:
+                        # Déboguer le contenu de 'note'
+                        print(f"Restaurer note: {note}")
+
+                        if isinstance(note, dict):  # Vérifier que 'note' est bien un dictionnaire
+                            matiere = Matiere.objects.get(nom=note.get('matiere__nom'))
+                            # Sauvegarder les données dans NoteArchive
+                            NoteArchive.objects.create(
+                                eleve=eleve,
+                                matiere=matiere,
+                                semestre=1 if semestre == 'semestre_1' else 2,
+                                note_devoir=note.get('note_devoir'),
+                                note_composition=note.get('note_composition'),
+                                annee_scolaire=archive.annee_scolaire  # Ajouter l'année scolaire
+                            )
+                        else:
+                            # Si 'note' n'est pas un dictionnaire, afficher une erreur
+                            print("Erreur : 'note' n'est pas un dictionnaire.")
+                            messages.error(request, "Erreur de format dans les notes.")
+                            return redirect('liste_archives')
+
+                # Restaurer les absences
+                for absence in archive.absences:
+                    if isinstance(absence, dict):  # Vérifier que 'absence' est un dictionnaire
+                        Absence.objects.create(
+                            eleve=eleve,
+                            date=timezone.datetime.fromisoformat(absence['date']),
+                            motif=absence['motif']
+                        )
+                    else:
+                        print("Erreur : 'absence' n'est pas un dictionnaire.")
+                        messages.error(request, "Erreur de format dans les absences.")
+                        return redirect('liste_archives')
+                    
+
+                # Restaurer la moyenne annuelle
+                eleve.moyenne_annuelle = archive.moyenne_annuelle
+                eleve.save()
+
+                # Gestion du passage de classe
+                if archive.passe_classe:
+                    classe_actuelle = eleve.classe
+                    if classe_actuelle and classe_actuelle.niveau:
+                        niveau_suivant = NiveauScolaire.objects.filter(ordre=classe_actuelle.niveau.ordre + 1).first()
+                        if niveau_suivant:
+                            nouvelle_classe = Classe.objects.filter(niveau=niveau_suivant, etablissement=classe_actuelle.etablissement).first()
+                            eleve.classe = nouvelle_classe if nouvelle_classe else None
+                        else:
+                            eleve.classe = None
+                    else:
+                        eleve.classe = None
+                    eleve.save()
+
+            messages.success(request, f"L'archive de l'année scolaire {archive.annee_scolaire} a été restaurée avec succès.")
+            return redirect('liste_archives')
+
+        # Si c'est une requête GET, afficher la page de confirmation
+        return render(request, 'bulletins/restaurer_annee_scolaire.html', {'archive': archive})
+
+    except Archive.DoesNotExist:
+        messages.error(request, "L'archive que vous essayez de restaurer n'existe pas.")
+        return redirect('liste_archives')
+    except Exception as e:
+        messages.error(request, f"Erreur lors de la restauration de l'archive : {e}")
+        return redirect('liste_archives')
+    
+    
+def restaurer_paiement(request, paiement_id):
+    try:
+        # Récupérer l'archive du paiement
+        paiement_archive = ArchivePaiement.objects.get(id=paiement_id)
+
+        if request.method == "POST":
+            annee_scolaire_actuelle = f"{timezone.now().year}-{timezone.now().year + 1}"
+
+            # Vérifier si l'archive appartient à l'année scolaire en cours
+            if paiement_archive.annee_scolaire == annee_scolaire_actuelle:
+                messages.error(request, "Le paiement appartient déjà à l'année scolaire en cours.")
+                return redirect('liste_archives')
+
+            # Récupérer l'élève associé au paiement
+            try:
+                eleve = Eleve.objects.get(id=paiement_archive.eleve_id)
+            except Eleve.DoesNotExist:
+                messages.error(request, "L'élève associé à ce paiement n'existe plus.")
+                return redirect('liste_archives')
+
+            # Vérifier si l'élève est associé à une classe
+            if not eleve.classe:
+                messages.error(request, "L'élève n'est pas associé à une classe.")
+                return redirect('liste_archives')
+
+            # Récupérer l'objet AnneeScolaire
+            try:
+                annee_scolaire_obj = AnneeScolaire.objects.get(nom=paiement_archive.annee_scolaire)
+            except AnneeScolaire.DoesNotExist:
+                messages.error(request, f"L'année scolaire {paiement_archive.annee_scolaire} n'existe pas.")
+                return redirect('liste_archives')
+
+            # Vérifier si les frais sont restaurés ou s'il faut les créer
+            frais_restauré, created = FraisRestauré.objects.get_or_create(
+                type_frais=paiement_archive.frais.strip(),  # Supprimer les espaces supplémentaires
+                annee_scolaire=paiement_archive.annee_scolaire,
+                classe=eleve.classe,
+                defaults={
+                    'montant': paiement_archive.montant_paye,  # Montant par défaut
+                    'description': f"{paiement_archive.frais} pour {eleve.classe}",
+                    'date_archivage': timezone.now(),
+                }
+            )
+
+            if created:
+                messages.info(request, f"Les frais restaurés '{paiement_archive.frais}' ont été créés pour l'année scolaire {paiement_archive.annee_scolaire} et la classe {eleve.classe}.")
+
+            # Vérifier si un paiement a déjà été restauré pour cet élève et cette année scolaire
+            paiement_existant = PaiementRestauré.objects.filter(
+                eleve=eleve,
+                annee_scolaire=annee_scolaire_obj,
+                frais=frais_restauré
+            ).exists()
+
+            if paiement_existant:
+                messages.error(request, "Le paiement a déjà été restauré pour cet élève.")
+                return redirect('liste_archives')
+
+            print(f"Création du paiement restauré pour {eleve.prenom} {eleve.nom} avec {frais_restauré.type_frais} pour {annee_scolaire_obj.nom}")
+
+            with transaction.atomic():
+                # Création du paiement restauré
+                PaiementRestauré.objects.create(
+                    eleve=eleve,
+                    frais=frais_restauré,
+                    montant_paye=paiement_archive.montant_paye,
+                    date_paiement=paiement_archive.date_paiement,
+                    mode_paiement=paiement_archive.mode_paiement,
+                    statut=paiement_archive.statut,
+                    reference=paiement_archive.reference,
+                    mois=None,  # Par défaut, aucun mois n'est spécifié
+                    est_anticipation=False,
+                    est_retroactif=False,
+                    nombre_mois=1,
+                    annee_scolaire=annee_scolaire_obj  # Utilisation de l'objet AnneeScolaire
+                )
+
+                messages.success(request, f"Le paiement pour l'élève {eleve.prenom} {eleve.nom} a été restauré avec succès.")
+                return redirect('liste_archives')
+
+        # Si la requête n'est pas POST, afficher le formulaire avec les détails du paiement archive
+        return render(request, 'bulletins/restaurer_paiement.html', {'paiement': paiement_archive})
+
+    except ArchivePaiement.DoesNotExist:
+        messages.error(request, "Le paiement que vous essayez de restaurer n'existe pas.")
+        return redirect('liste_archives')
+    except Exception as e:
+        messages.error(request, f"Erreur lors de la restauration du paiement : {str(e)}")
+        return redirect('liste_archives')
+
+
+    
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def restaurer_archive_liste(request):
+    archives = Archive.objects.all()  # Récupère toutes les archives
+    archives_paiements = ArchivePaiement.objects.all()
+    context = {
+        'archives': archives,
+        'archives_paiements': archives_paiements,
+    }
+    return render(request, 'bulletins/restaurer_archive_liste.html', context)
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def details_payement_rest(request, eleve_id):
+    eleve = get_object_or_404(Eleve, id=eleve_id)
+    paiements = PaiementRestauré.objects.filter(eleve=eleve).order_by('-date_paiement')
+
+    # Calcul du total payé
+    total_paye = sum(paiement.montant_paye for paiement in paiements)
+
+    return render(request, 'bulletins/detail_paiements_eleve.html', {
+        'eleve': eleve,
+        'paiements': paiements,
+        'total_paye': total_paye  # Passer le total au template
+    })
 
 
 
@@ -3088,6 +3642,7 @@ def saisie_annee_scolaire(request):
         'title': 'Ajouter une année scolaire',
     }
     return render(request, 'bulletins/saisie_annee_scolaire.html', context)
+
 
 @login_required
 @user_passes_test(is_admin, login_url='login')
@@ -3149,7 +3704,6 @@ def supprimer_annee_scolaire(request, annee_id):
 
 # @user_passes_test(is_admin, login_url='login')
 @login_required
-@login_required
 @user_passes_test(is_admin_or_enseignant, login_url='login')
 def choisir_matieres_optionnelles(request, eleve_id):
     eleve = get_object_or_404(Eleve, id=eleve_id)
@@ -3166,7 +3720,7 @@ def choisir_matieres_optionnelles(request, eleve_id):
     # Appliquer la règle spécifique de la 4e pour choisir entre Physique-Chimie et une langue étrangère
     if niveau.nom == "4e" and etablissement.choix_matiere_quatrieme:
         pc = Matiere.objects.filter(nom="Science Physique").first()
-        langues = Matiere.objects.filter(nom__in=["Espagnol", "Arabe", "Allemand"])
+        langues = Matiere.objects.filter(nom__in=["Espagnol", "Arabe", "Allemand", "Italien"])
 
         # Si Physique-Chimie est présente, exclure les langues de la sélection
         if pc in matieres_optionnelles:
@@ -3183,7 +3737,7 @@ def choisir_matieres_optionnelles(request, eleve_id):
 
             # Validation des règles concernant Physique-Chimie et les langues
             if "Physique-Chimie" in [m.nom for m in choix_matieres] and \
-               set([m.nom for m in choix_matieres]) & {"Espagnol", "Arabe", "Allemand"}:
+               set([m.nom for m in choix_matieres]) & {"Espagnol", "Arabe", "Allemand", "Italien"}:
                 messages.error(request, "Vous devez choisir entre Physique-Chimie et une seule langue.")
                 return redirect("choisir_matieres_optionnelles", eleve_id=eleve.id)
 
@@ -3205,13 +3759,15 @@ def choisir_matieres_optionnelles(request, eleve_id):
     return render(request, "bulletins/choisir_matieres.html", context)
 
 
-
+@login_required
+@user_passes_test(is_admin, login_url='login')
 def profil_eleve(request, eleve_id):
     eleve = get_object_or_404(Eleve, id=eleve_id)
     return render(request, "bulletins/profil_eleve.html", {"eleve": eleve})
 
 
-
+@login_required
+@user_passes_test(is_admin, login_url='login')
 def ajouter_niveau(request):
     if request.method == "POST":
         form = NiveauScolaireForm(request.POST)
@@ -3506,4 +4062,581 @@ def bulletin_eleve_m2(request, eleve_id, semestre):
 
 
 
+# Vues pour les frais
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def liste_frais(request):
+    frais_list = Frais.objects.all()
+    return render(request, 'bulletins/liste_frais.html', {'frais_list': frais_list})
 
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def ajouter_frais(request):
+    if request.method == 'POST':
+        form = FraisForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('liste_frais')
+    else:
+        form = FraisForm()
+    return render(request, 'bulletins/form_frais.html', {'form': form})
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def modifier_frais(request, frais_id):
+    frais = get_object_or_404(Frais, id=frais_id)
+    if request.method == 'POST':
+        form = FraisForm(request.POST, instance=frais)
+        if form.is_valid():
+            form.save()
+            return redirect('liste_frais')
+    else:
+        form = FraisForm(instance=frais)
+    return render(request, 'bulletins/form_frais.html', {'form': form})
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def supprimer_frais(request, frais_id):
+    frais = get_object_or_404(Frais, id=frais_id)
+    frais.delete()
+    return redirect('liste_frais')
+
+# Vues pour les paiements
+def liste_paiements(request):
+    paiement_list = Paiement.objects.all()
+    return render(request, 'bulletins/liste_paiements.html', {'paiement_list': paiement_list})
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def enregistrer_paiement(request, eleve_id=None, frais_id=None):
+    if request.method == 'POST':
+        form = PaiementForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('liste_paiements')
+    else:
+        initial = {}
+        if eleve_id and frais_id:
+            eleve = get_object_or_404(Eleve, id=eleve_id)
+            frais = get_object_or_404(Frais, id=frais_id)
+            initial = {'eleve': eleve, 'frais': frais}
+        form = PaiementForm(initial=initial)
+    return render(request, 'bulletins/enregistrer_paiement.html', {'form': form})
+
+# Vues pour les échéances
+def echeances_impayees(request, eleve_id):
+    eleve = get_object_or_404(Eleve, id=eleve_id)
+    
+    # Récupérer toutes les échéances de l'élève
+    echeances = Echeance.objects.filter(eleve=eleve)
+    
+    # Calculer le solde restant (somme des échéances impayées)
+    solde_restant = sum(echeance.montant_du for echeance in echeances if echeance.statut == 'impaye')
+    
+    return render(request, 'bulletins/echeances_impayees.html', {
+        'eleve': eleve,
+        'echeances': echeances,  # Toutes les échéances
+        'solde_restant': solde_restant,  # Solde restant
+    })
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def liste_eleves_par_classe(request):
+    classe_id = request.GET.get('classe')
+    search_query = request.GET.get('search')
+
+    classes = Classe.objects.all()
+    eleves = Eleve.objects.all()
+
+    if classe_id:
+        eleves = eleves.filter(classe_id=classe_id)
+    if search_query:
+        eleves = eleves.filter(nom__icontains=search_query) | eleves.filter(prenom__icontains=search_query)
+
+    # Calculer le mois actuel et le mois précédent
+    mois_actuel = datetime.now().month
+    mois_precedent = mois_actuel - 1 if mois_actuel > 1 else 12  # Gérer le passage de janvier à décembre
+    mois_suivant = mois_actuel  # Le mois suivant est le mois actuel
+
+    # Ajouter les mois payés et manquants pour chaque élève
+    for eleve in eleves:
+        # Récupérer les mois déjà payés pour cet élève
+        eleve.mois_payes = list(Paiement.objects.filter(eleve=eleve, frais__type_frais='mensualite').values_list('mois', flat=True))
+        # Calculer les mois manquants (mois passés non payés)
+        eleve.mois_manquants = [mois for mois in range(1, mois_actuel) if mois not in eleve.mois_payes]
+
+    return render(request, 'bulletins/liste_eleves_par_classe.html', {
+        'classes': classes,
+        'eleves': eleves,
+        'selected_classe': int(classe_id) if classe_id else None,
+        'search_query': search_query,
+        'mois_precedent': mois_precedent,  # Passer le mois précédent au template
+        'mois_suivant': mois_suivant,  # Passer le mois suivant au template
+    })
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def liste_eleves_par_classe_rest(request):
+    classe_id = request.GET.get('classe')
+    search_query = request.GET.get('search')
+
+    classes = Classe.objects.all()
+    eleves = Eleve.objects.all()
+
+    if classe_id:
+        eleves = eleves.filter(classe_id=classe_id)
+    if search_query:
+        eleves = eleves.filter(nom__icontains=search_query) | eleves.filter(prenom__icontains=search_query)
+
+    # Calculer le mois actuel et le mois précédent
+    mois_actuel = datetime.now().month
+    mois_precedent = mois_actuel - 1 if mois_actuel > 1 else 12  # Gérer le passage de janvier à décembre
+    mois_suivant = mois_actuel  # Le mois suivant est le mois actuel
+
+    # Ajouter les mois payés et manquants pour chaque élève
+    for eleve in eleves:
+        # Récupérer les mois déjà payés pour cet élève
+        eleve.mois_payes = list(Paiement.objects.filter(eleve=eleve, frais__type_frais='mensualite').values_list('mois', flat=True))
+        # Calculer les mois manquants (mois passés non payés)
+        eleve.mois_manquants = [mois for mois in range(1, mois_actuel) if mois not in eleve.mois_payes]
+
+    return render(request, 'bulletins/liste_eleves_par_classe_rest.html', {
+        'classes': classes,
+        'eleves': eleves,
+        'selected_classe': int(classe_id) if classe_id else None,
+        'search_query': search_query,
+        'mois_precedent': mois_precedent,  # Passer le mois précédent au template
+        'mois_suivant': mois_suivant,  # Passer le mois suivant au template
+    })
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def paiement_inscription(request, eleve_id):
+    eleve = get_object_or_404(Eleve, id=eleve_id)
+    frais_inscription = Frais.objects.filter(type_frais='inscription', classe=eleve.classe).first()
+
+    # Vérifier si un paiement d'inscription existe déjà
+    paiement_existant = Paiement.objects.filter(eleve=eleve, frais=frais_inscription).first()
+    if paiement_existant:
+        messages.info(request, "Le paiement de l'inscription a déjà été effectué.")
+        return redirect('details_paiement', paiement_id=paiement_existant.id)
+
+    if request.method == 'POST':
+        form = PaiementForm(request.POST)
+        if form.is_valid():
+            paiement = form.save(commit=False)
+            paiement.eleve = eleve
+            paiement.frais = frais_inscription
+            paiement.annee_scolaire = frais_inscription.annee_scolaire  # Définir l'année scolaire
+            paiement.statut = 'paye'
+            paiement.save()
+            messages.success(request, "Paiement de l'inscription enregistré avec succès.")
+            return redirect('details_paiement', paiement_id=paiement.id)
+    else:
+        # Initialiser le formulaire avec l'année scolaire
+        form = PaiementForm(initial={
+            'eleve': eleve,
+            'frais': frais_inscription,
+            'annee_scolaire': frais_inscription.annee_scolaire,  # Ajouter l'année scolaire
+            'statut': 'paye'
+        })
+
+    return render(request, 'bulletins/paiement_form.html', {'form': form, 'eleve': eleve, 'type_paiement': 'inscription'})
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def paiement_mensuel(request, eleve_id, mois):
+    eleve = get_object_or_404(Eleve, id=eleve_id)
+    frais_mensuel = Frais.objects.filter(type_frais='mensualite', classe=eleve.classe).first()
+
+    # Récupérer l'année scolaire actuelle de la classe de l'élève
+    annee_scolaire = eleve.classe.etablissement.annee_scolaire
+    annee_actuelle = datetime.now().year  # Définir l'année actuelle
+
+    # Vérifier si un paiement mensuel existe déjà pour ce mois et cette année scolaire
+    paiement_existant = Paiement.objects.filter(
+        eleve=eleve,
+        frais=frais_mensuel,
+        mois=mois,
+        annee_scolaire=annee_scolaire
+    ).first()
+
+    if paiement_existant:
+        messages.info(request, f"Le paiement pour le mois {paiement_existant.get_mois_display()} de l'année scolaire {paiement_existant.annee_scolaire.nom} a déjà été effectué.")
+        return redirect('details_paiement', paiement_id=paiement_existant.id)
+
+    if request.method == 'POST':
+        form = PaiementForm(request.POST)
+        if form.is_valid():
+            paiement = form.save(commit=False)
+            paiement.eleve = eleve
+            paiement.frais = frais_mensuel
+            paiement.mois = mois
+            paiement.annee_scolaire = annee_scolaire
+            paiement.save()
+
+            # Mettre à jour le statut de l'échéance correspondante
+            echeance = Echeance.objects.filter(
+                eleve=eleve,
+                frais=frais_mensuel,
+                date_echeance__month=mois,
+                date_echeance__year=annee_actuelle
+            ).first()
+            if echeance:
+                echeance.statut = 'paye'
+                echeance.save()
+
+            messages.success(request, f"Paiement pour le mois {paiement.get_mois_display()} de l'année scolaire {paiement.annee_scolaire.nom} enregistré avec succès.")
+            return redirect('details_paiement', paiement_id=paiement.id)
+    else:
+        form = PaiementForm(initial={'eleve': eleve, 'frais': frais_mensuel, 'mois': mois, 'annee_scolaire': annee_scolaire})
+
+    return render(request, 'bulletins/paiement_form.html', {
+        'form': form,
+        'eleve': eleve,
+        'type_paiement': 'mensuel',
+        'mois': mois,
+        'annee_scolaire': annee_scolaire
+    })
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def details_paiement(request, paiement_id):
+    paiement = get_object_or_404(Paiement, id=paiement_id)
+    return render(request, 'bulletins/details_paiement.html', {'paiement': paiement})
+
+
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def paiement_retroactif(request, eleve_id):
+    eleve = get_object_or_404(Eleve, id=eleve_id)
+    frais_mensuel = Frais.objects.filter(type_frais='mensualite', classe=eleve.classe).first()
+
+    if not frais_mensuel:
+        messages.error(request, "Aucun frais mensuel n'est configuré pour cette classe.")
+        return redirect('liste_eleves_par_classe')
+
+    # Récupérer l'année scolaire en cours
+    annee_scolaire = AnneeScolaire.get_annee_scolaire_en_cours()
+    if not annee_scolaire:
+        messages.error(request, "Aucune année scolaire n'est configurée pour la période en cours.")
+        return redirect('liste_eleves_par_classe')
+
+    # Vérifier si un paiement rétroactif existe déjà pour cet élève
+    paiement_existant = Paiement.objects.filter(
+        eleve=eleve,
+        frais=frais_mensuel,
+        est_retroactif=True,
+        statut='paye',  # Ne considérer que les paiements effectués
+        annee_scolaire=annee_scolaire  # Filtrer par année scolaire
+    ).first()
+
+    # Si un paiement rétroactif existe déjà, rediriger vers les détails
+    if paiement_existant:
+        messages.info(request, "Un paiement rétroactif existe déjà pour cet élève.")
+        return redirect('details_paiement_retro', paiement_id=paiement_existant.id)
+
+    if request.method == 'POST':
+        form = PaiementRetroactifForm(request.POST)
+        if form.is_valid():
+            nombre_mois = form.cleaned_data['nombre_mois']
+            mois_actuel = datetime.now().month
+
+            # Calculer les mois concernés par le paiement rétroactif
+            mois_debut = mois_actuel - nombre_mois + 1
+            mois_fin = mois_actuel
+
+            # Calculer le montant total pour tous les mois
+            montant_total = frais_mensuel.montant * nombre_mois
+
+            # Créer un seul paiement pour tous les mois concernés
+            paiement = Paiement.objects.create(
+                eleve=eleve,
+                frais=frais_mensuel,
+                montant_paye=montant_total,
+                date_paiement=timezone.now(),
+                mode_paiement=form.cleaned_data['mode_paiement'],
+                statut='paye',
+                reference=form.cleaned_data['reference'],
+                mois=mois_fin,  # Enregistrer le dernier mois concerné
+                est_retroactif=True,
+                nombre_mois=nombre_mois,
+                annee_scolaire=annee_scolaire  # Associer l'année scolaire en cours
+            )
+
+            messages.success(request, f"Paiement rétroactif pour {nombre_mois} mois enregistré avec succès.")
+            return redirect('details_paiement_retro', paiement_id=paiement.id)
+    else:
+        form = PaiementRetroactifForm(initial={'eleve': eleve, 'frais': frais_mensuel})
+
+    return render(request, 'bulletins/paiement_retroactif_form.html', {'form': form, 'eleve': eleve})
+
+
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def details_paiement_retro(request, paiement_id):
+    paiement = get_object_or_404(Paiement, id=paiement_id)
+    return render(request, 'bulletins/details_paiement_retro.html', {'paiement': paiement})
+
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def liste_paiements_eleve(request, eleve_id):
+    eleve = get_object_or_404(Eleve, id=eleve_id)
+    paiements = eleve.paiements.filter(statut='paye').order_by('-date_paiement')  # Récupérer les paiements payés
+
+    # Pagination
+    paginator = Paginator(paiements, 10)  # Afficher 10 paiements par page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'bulletins/liste_paiements_eleve.html', {'eleve': eleve, 'paiements': paiements, 'page_obj': page_obj,
+        'solde_restant': eleve.solde_restant()})
+
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def imprimer_recu(request, paiement_id):
+    paiement = get_object_or_404(Paiement, id=paiement_id)
+    etablissement = paiement.eleve.classe.etablissement if paiement.eleve.classe else None
+    return render(request, 'bulletins/recu_paiement.html', {
+        'paiement': paiement,
+        'etablissement': etablissement,
+        'date_du_jour': date.today(),
+    })
+
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def paiement_echeance(request, echeance_id):
+    echeance = get_object_or_404(Echeance, id=echeance_id)
+
+    # ✅ Récupérer l'année scolaire depuis le frais lié
+    annee_scolaire_actuelle = echeance.frais.annee_scolaire  
+
+      
+    if request.method == 'POST':
+        form = PaiementForm(request.POST, echeance=echeance)  # Passer l'échéance au formulaire
+        if form.is_valid():
+            paiement = form.save(commit=False)
+            paiement.eleve = echeance.eleve
+            paiement.frais = echeance.frais
+            paiement.annee_scolaire = annee_scolaire_actuelle  # ✅ Utilisation de l'année scolaire du frais
+            paiement.save()
+
+            # Mettre à jour le statut de l'échéance
+            if paiement.montant_paye >= echeance.montant_du:
+                echeance.statut = 'paye'
+                echeance.save()
+                messages.success(request, "L'échéance a été payée avec succès.")
+            else:
+                messages.warning(request, "Le montant payé est inférieur au montant dû. L'échéance reste partiellement payée.")
+            
+            return redirect('echeances_impayees_eleve', eleve_id=echeance.eleve.id)
+    else:
+        form = PaiementForm(echeance=echeance)  # Passer l'échéance au formulaire
+
+    return render(request, 'bulletins/paiement_echeance_form.html', {'form': form, 'echeance': echeance})
+
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def echeances_impayees_eleve(request, eleve_id):
+    eleve = get_object_or_404(Eleve, id=eleve_id)
+
+    # Récupérer l'année scolaire en cours
+    annee_scolaire_en_cours = AnneeScolaire.get_annee_scolaire_en_cours()
+    
+    if not annee_scolaire_en_cours:
+        return render(request, 'bulletins/echeances_impayees_eleve.html', {
+            'eleve': eleve,
+            'echeances_impayees': [],
+            'erreur': "Aucune année scolaire en cours.",
+            'solde_restant': eleve.solde_restant()
+        })
+
+    # Récupérer les échéances impayées
+    echeances_impayees = eleve.echeances.filter(
+        statut='impaye',
+        frais__annee_scolaire=annee_scolaire_en_cours
+    ).order_by('date_echeance')
+
+    # Calcul du total impayé (échéances existantes)
+    total_impaye = echeances_impayees.aggregate(total=Sum('montant_du'))['total'] or Decimal('0.00')
+
+    return render(request, 'bulletins/echeances_impayees_eleve.html', {
+        'eleve': eleve,
+        'echeances_impayees': echeances_impayees,
+        'total_impaye': total_impaye,
+        'solde_restant': eleve.solde_restant(),  # ✅ Appel direct au solde
+        'annee_scolaire': annee_scolaire_en_cours,
+    })
+
+
+
+@login_required
+@user_passes_test(is_admin, login_url='login')
+def facture_echeance(request, echeance_id):
+    echeance = get_object_or_404(Echeance, id=echeance_id)
+    etablissement = Etablissement.objects.first()  # À ajuster selon ton setup
+    return render(request, 'bulletins/facture_echeance.html', {
+        'echeance': echeance,
+        'etablissement': etablissement,
+        'date_du_jour': date.today(),
+    })
+
+
+def emploi_du_temps_classe(request, classe_id):
+    classe = get_object_or_404(Classe, id=classe_id)
+    emploi_du_temps = EmploiDuTemps.objects.filter(classe=classe).order_by('jour', 'heure_debut')
+    
+    return render(request, 'bulletins/emploi_du_temps_classe.html', {
+        'classe': classe,
+        'emploi_du_temps': emploi_du_temps,
+    })
+
+
+
+def emploi_du_temps_enseignant(request, enseignant_id):
+    enseignant = get_object_or_404(Enseignant, id=enseignant_id)
+    emploi_du_temps = EmploiDuTemps.objects.filter(enseignant=enseignant).order_by('jour', 'heure_debut')
+    
+    return render(request, 'bulletins/emploi_du_temps_enseignant.html', {
+        'enseignant': enseignant,
+        'emploi_du_temps': emploi_du_temps,
+    })
+
+
+def ajouter_creneau(request):
+    if request.method == 'POST':
+        form = EmploiDuTempsForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('liste_emploi_du_temps')  # Rediriger vers la liste des créneaux
+    else:
+        form = EmploiDuTempsForm()
+    
+    return render(request, 'bulletins/creneau_form.html', {
+        'form': form,
+        'titre': 'Ajouter un créneau',
+    })
+
+
+def get_matieres_par_enseignant(request):
+    enseignant_id = request.GET.get('enseignant_id')
+    if enseignant_id:
+        try:
+            enseignant = Enseignant.objects.get(id=enseignant_id)
+            matieres = enseignant.matieres.all()
+            matieres_data = [{'id': matiere.id, 'nom': matiere.nom} for matiere in matieres]
+            return JsonResponse({'matieres': matieres_data})
+        except Enseignant.DoesNotExist:
+            return JsonResponse({'matieres': []})
+    return JsonResponse({'matieres': []})
+
+
+def modifier_creneau(request, creneau_id):
+    creneau = get_object_or_404(EmploiDuTemps, id=creneau_id)
+    if request.method == 'POST':
+        form = EmploiDuTempsForm(request.POST, instance=creneau)
+        if form.is_valid():
+            form.save()
+            return redirect('liste_emploi_du_temps')  # Rediriger vers la liste des créneaux
+    else:
+        form = EmploiDuTempsForm(instance=creneau)
+    
+    return render(request, 'bulletins/creneau_form.html', {
+        'form': form,
+        'titre': 'Modifier un créneau',
+    })
+
+
+def liste_classes_emp(request):
+    classes = Classe.objects.all()
+    return render(request, 'bulletins/liste_classes_emp.html', {
+        'classes': classes,
+    })
+
+
+def liste_enseignants_emp(request):
+    enseignants = Enseignant.objects.all()
+    return render(request, 'bulletins/liste_enseignants_emp.html', {
+        'enseignants': enseignants,
+    })
+
+
+def liste_emploi_du_temps(request):
+    classe_id = request.GET.get('classe')  # Récupérer l'ID de la classe sélectionnée
+    creneaux_list = EmploiDuTemps.objects.all().order_by('jour', 'heure_debut')
+
+    if classe_id:
+        creneaux_list = creneaux_list.filter(classe_id=classe_id)
+
+    paginator = Paginator(creneaux_list, 10)  # 10 éléments par page
+    page_number = request.GET.get('page')
+    creneaux = paginator.get_page(page_number)
+
+    classes = Classe.objects.all()  # Récupérer toutes les classes pour le filtre
+
+    return render(request, 'bulletins/liste_emploi_du_temps.html', {
+        'creneaux': creneaux,
+        'classes': classes,
+        'selected_classe': classe_id,  # Passer la classe sélectionnée pour l'affichage
+    })
+
+
+def etat_impression_classe(request, classe_id):
+    classe = get_object_or_404(Classe, id=classe_id)
+    emploi_du_temps = EmploiDuTemps.objects.filter(classe=classe).order_by('jour', 'heure_debut')
+    
+    # Organiser les créneaux par jour
+    jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+    emploi_par_jour = {jour: [] for jour in jours}
+    
+    for creneau in emploi_du_temps:
+        emploi_par_jour[creneau.jour].append(creneau)
+    
+    return render(request, 'bulletins/etat_impression_classe.html', {
+        'classe': classe,
+        'emploi_par_jour': emploi_par_jour,
+    })
+
+
+def etat_impression_enseignant(request, enseignant_id):
+    enseignant = get_object_or_404(Enseignant, id=enseignant_id)
+    emploi_du_temps = EmploiDuTemps.objects.filter(enseignant=enseignant).order_by('jour', 'heure_debut')
+    
+    # Organiser les créneaux par jour
+    jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+    emploi_par_jour = {jour: [] for jour in jours}
+    
+    for creneau in emploi_du_temps:
+        emploi_par_jour[creneau.jour].append(creneau)
+
+    # Récupérer l'année scolaire en cours et les informations de l'établissement
+    annee_scolaire = AnneeScolaire.get_annee_scolaire_en_cours()
+    etablissement = Etablissement.objects.first()  # Assurez-vous d'adapter la méthode de récupération
+
+    return render(request, 'bulletins/etat_impression_enseignant.html', {
+        'enseignant': enseignant,
+        'emploi_par_jour': emploi_par_jour,
+        'annee_scolaire': annee_scolaire,
+        'etablissement': etablissement,
+    })

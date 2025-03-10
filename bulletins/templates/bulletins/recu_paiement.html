@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reçu de Paiement</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .recu {
+            max-width: 700px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+            border: 2px solid black;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 3px solid black;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header img {
+            max-width: 80px;
+            height: auto;
+        }
+        .header .info {
+            text-align: right;
+            font-size: 14px;
+        }
+        .titre {
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+            text-decoration: underline;
+        }
+        .details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 15px;
+        }
+        .details div {
+            width: 48%;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 12px;
+            text-align: center;
+            font-size: 14px;
+        }
+        th {
+            background: black;
+            color: white;
+        }
+        .total {
+            font-weight: bold;
+            background: #ddd;
+        }
+        .footer {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+        }
+        .signature {
+            text-align: right;
+            margin-top: 40px;
+        }
+        .cachet {
+            width: 150px;
+            height: 80px;
+            border: 2px solid black;
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .btn-print {
+            margin-top: 20px;
+            padding: 10px;
+            background: blue;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+        }
+        @media print {
+            .btn-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="recu">
+        <!-- En-tête avec logo et informations de l'établissement -->
+        <div class="header">
+            {% if etablissement.logo %}
+                <img src="{{ etablissement.logo.url }}" alt="Logo">
+            {% endif %}
+            <div class="info">
+                <p><strong>{{ etablissement.nom }}</strong></p>
+                <p>{{ etablissement.adresse }}</p>
+                <p>Tél : {{ etablissement.telephone }}</p>
+            </div>
+        </div>
+
+        <!-- Titre -->
+        <p class="titre">REÇU DE PAIEMENT</p>
+
+        <!-- Informations de l'élève et année scolaire -->
+        <div class="details">
+            <div>
+                <p><strong>Année scolaire :</strong> {{ etablissement.annee_scolaire }}</p>
+                <p><strong>Date :</strong> {{ date_du_jour|date:"d/m/Y" }}</p>
+            </div>
+            <div style="text-align: right;">
+                <p><strong>Élève :</strong> {{ paiement.eleve.prenom }} {{ paiement.eleve.nom }}</p>
+                <p><strong>Classe :</strong> {{ paiement.eleve.classe }}</p>
+            </div>
+        </div>
+
+        <!-- Tableau de paiement -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Frais</th>
+                    <th>Mois Concerné</th>
+                    <th>Versement</th>
+                    <th style="border-left: 2px solid black;">Restant</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ paiement.frais.get_type_frais_display }}</td>
+                    <td>{{ paiement.date_paiement|date:"F Y" }}</td>
+                    <td>{{ paiement.montant_paye }} FCFA</td>
+                    <td style="border-left: 2px solid black;">0 FCFA</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" class="total">Total</td>
+                    <td class="total" style="border-left: 2px solid black;">{{ paiement.montant_paye }} FCFA</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Pied de page avec signature et cachet -->
+        <div class="footer">
+            <div class="cachet">
+                <p>Cachet de l'école</p>
+            </div>
+            <div class="signature">
+                <p>Signature du responsable</p>
+                <p>_______________________</p>
+            </div>
+        </div>
+
+        <!-- Bouton d'impression -->
+        <button class="btn-print" onclick="window.print()">Imprimer</button>
+    </div>
+
+</body>
+</html>

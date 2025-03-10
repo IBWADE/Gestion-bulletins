@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if form.instance.id %}Modifier{% else %}Ajouter{% endif %} un Frais
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">{% if form.instance.id %}Modifier{% else %}Ajouter{% endif %} un Frais</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+
+                <!-- Ligne Type de Frais et Montant -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">{{ form.type_frais.label }}</label>
+                        {{ form.type_frais }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">{{ form.montant.label }}</label>
+                        {{ form.montant }}
+                    </div>
+                </div>
+
+                <!-- Ligne Classe et Année Scolaire -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">{{ form.classe.label }}</label>
+                        {{ form.classe }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">{{ form.annee_scolaire.label }}</label>
+                        {{ form.annee_scolaire }}
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">{{ form.description.label }}</label>
+                    {{ form.description }}
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'liste_frais' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Annuler
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Ajout de styles pour améliorer l'apparence des champs -->
+<style>
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        padding: 10px;
+    }
+    .form-label {
+        font-size: 1.1rem;
+    }
+    .card {
+        border-radius: 12px;
+    }
+</style>
+
+{% endblock %}

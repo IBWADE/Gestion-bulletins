@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Échéances Impayées de {{ eleve.prenom }} {{ eleve.nom }}{% endblock %}
+
+{% block content %}
+<h1>Échéances Impayées de {{ eleve.prenom }} {{ eleve.nom }}</h1>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Type de Frais</th>
+            <th>Montant Dû</th>
+            <th>Date d'Échéance</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for echeance in echeances %}
+        <tr>
+            <td>{{ echeance.frais.get_type_frais_display }}</td>
+            <td>{{ echeance.montant_du }} FCFA</td>
+            <td>{{ echeance.date_echeance }}</td>
+            <td>
+                <a href="{% url 'enregistrer_paiement' eleve.id echeance.frais.id %}" class="btn btn-primary">Payer</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<a href="{% url 'detail_eleve' eleve.id %}" class="btn btn-secondary">Retour</a>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Détails du Paiement Rétroactif{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-history"></i> Détails du Paiement Rétroactif</h3>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title text-center"><strong>Paiement de {{ paiement.frais.get_type_frais_display }}</strong></h5>
+
+            <table class="table table-bordered mt-3">
+                <tbody>
+                    <tr>
+                        <th>👤 Élève :</th>
+                        <td>{{ paiement.eleve.prenom }} {{ paiement.eleve.nom }}</td>
+                    </tr>
+                    <tr>
+                        <th>🏫 Classe :</th>
+                        <td>{{ paiement.eleve.classe.nom }}</td>
+                    </tr>
+                    <tr>
+                        <th>💰 Montant payé :</th>
+                        <td><strong>{{ paiement.montant_paye }} FCFA</strong></td>
+                    </tr>
+                    <tr>
+                        <th>📅 Nombre de mois :</th>
+                        <td>{{ paiement.nombre_mois }}</td>
+                    </tr>
+                    <tr>
+                        <th>📆 Date de paiement :</th>
+                        <td>{{ paiement.date_paiement }}</td>
+                    </tr>
+                    <tr>
+                        <th>💳 Mode de paiement :</th>
+                        <td><span class="badge bg-info">{{ paiement.get_mode_paiement_display }}</span></td>
+                    </tr>
+                    <tr>
+                        <th>📌 Statut :</th>
+                        <td>
+                            {% if paiement.statut == "valide" %}
+                                <span class="badge bg-success">Validé</span>
+                            {% elif paiement.statut == "en_attente" %}
+                                <span class="badge bg-warning">En attente</span>
+                            {% else %}
+                                <span class="badge bg-danger">Annulé</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>📆 Mois concernés :</th>
+                        <td>{{ paiement.get_mois_display }}</td>
+                    </tr>
+                    <tr>
+                        <th>🔖 Référence :</th>
+                        <td>{{ paiement.reference|default:"Aucune" }}</td>
+                    </tr>
+                    <tr>
+                        <th>🔄 Paiement rétroactif :</th>
+                        <td>
+                            {% if paiement.est_retroactif %}
+                                <span class="badge bg-danger">Oui</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Non</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'liste_eleves_par_classe' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour à la liste
+                </a>
+                <button class="btn btn-success" onclick="window.print()">
+                    <i class="fas fa-print"></i> Imprimer le reçu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Styles personnalisés -->
+<style>
+    .card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .table th {
+        width: 40%;
+        background: #f8f9fa;
+    }
+    .btn {
+        border-radius: 8px;
+    }
+</style>
+
+{% endblock %}

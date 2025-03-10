@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Paiement - {{ type_paiement|title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">Paiement de {{ type_paiement|title }} pour {{ eleve.prenom }} {{ eleve.nom }}</h2>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    {{ form.as_p }}
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check-circle"></i> Enregistrer
+                    </button>
+                    <a href="{% url 'liste_eleves_par_classe' %}" class="btn btn-danger">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Ajout d'un script pour confirmation -->
+<script>
+    document.querySelector("form").addEventListener("submit", function(event) {
+        if (!confirm("Confirmez-vous l'enregistrement de ce paiement ?")) {
+            event.preventDefault();
+        }
+    });
+</script>
+
+<!-- Styles pour améliorer l'apparence -->
+<style>
+    .card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        padding: 10px;
+    }
+    .btn {
+        border-radius: 8px;
+    }
+</style>
+
+{% endblock %}
